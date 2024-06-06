@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-
-
-import '../adManager.dart'; // Import the AdManager
+import '../adManager.dart';
+import 'Home/GiveReview.dart'; // Import the AdManager
 
 class HomePage extends StatelessWidget {
   @override
@@ -14,14 +13,22 @@ class HomePage extends StatelessWidget {
           children: [
             ElevatedButton(
               onPressed: () {
-                AdManager().showRewardedAd(context); // Call showRewardedAd method from AdManager
+                AdManager().showRewardedAd(context);
               },
               child: Text('Watch Ad'), // Text for the button
             ),
             SizedBox(height: 20),
-            Text(
-              'Home Page',
-              style: TextStyle(color: Colors.white),
+            ElevatedButton(
+              onPressed: () {
+                AdManager().showRewardedAd(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          ReviewScreen()),
+                );// Call showRewardedAd method from AdManager
+              },
+              child: Text('Review Screen'), // Text for the button
             ),
           ],
         ),

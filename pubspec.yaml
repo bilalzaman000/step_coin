@@ -72,6 +72,7 @@ flutter:
     - assets/WelcomePage/
     - assets/Login/
     - assets/NewUser/
+    - assets/Games/
 
 
   # An image asset can refer to one or more resolution-specific "variants", see
