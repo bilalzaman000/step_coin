@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
+//NotInUseDueToPasswordResetLink
 
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../Widgets/SnackBar.dart';
 import '../login/login.dart';
-
 
 class UpdatePasswordScreen extends StatefulWidget {
   @override
@@ -14,6 +15,7 @@ class _UpdatePasswordScreenState extends State<UpdatePasswordScreen> {
   bool _isObscureConfirmPassword = true;
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   @override
   void dispose() {
@@ -22,9 +24,9 @@ class _UpdatePasswordScreenState extends State<UpdatePasswordScreen> {
     super.dispose();
   }
 
-  void _updatePassword() {
-    final newPassword = _newPasswordController.text;
-    final confirmPassword = _confirmPasswordController.text;
+  void _updatePassword() async {
+    final newPassword = _newPasswordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
 
     if (newPassword.isEmpty || confirmPassword.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -40,21 +42,25 @@ class _UpdatePasswordScreenState extends State<UpdatePasswordScreen> {
       return;
     }
 
-    // Show the custom Snackbar
-    ScaffoldMessenger.of(context).showSnackBar(
-      customPasswordSnackbar(
-        message: 'Password updated successfully',
-        onPressed: () {
-          // Dismiss the SnackBar
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          // Navigate to login screen
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => LoginScreen()),
-          );
-        },
-      ),
-    );
+    try {
+      await _auth.currentUser?.updatePassword(newPassword);
+      ScaffoldMessenger.of(context).showSnackBar(
+        customPasswordSnackbar(
+          message: 'Password updated successfully',
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => LoginScreen()),
+            );
+          },
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message!)),
+      );
+    }
   }
 
   @override

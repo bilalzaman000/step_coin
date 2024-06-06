@@ -1,7 +1,49 @@
 import 'package:flutter/material.dart';
-import 'package:step_coin/reset/reset_OTP_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../login/login.dart';
 
-class ResetPasswordScreen extends StatelessWidget {
+class ResetPasswordScreen extends StatefulWidget {
+  @override
+  _ResetPasswordScreenState createState() => _ResetPasswordScreenState();
+}
+
+class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
+  final TextEditingController _emailController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  bool _isLoading = false;
+
+  Future<void> _resetPassword(BuildContext context) async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please enter your email')),
+      );
+      return;
+    }
+
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+      await _auth.sendPasswordResetEmail(email: email);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Password reset email sent')),
+      );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+      );
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message!)),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -23,14 +65,14 @@ class ResetPasswordScreen extends StatelessWidget {
       backgroundColor: Colors.black,
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.only(top: 40), // Position the body a little up
+          padding: const EdgeInsets.only(top: 40),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Image.asset(
                 'assets/Lock.png',
-                width: 100, // Adjust the width as needed
-                height: 100, // Adjust the height as needed
+                width: 100,
+                height: 100,
               ),
               SizedBox(height: 30),
               Text(
@@ -46,6 +88,7 @@ class ResetPasswordScreen extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: TextFormField(
+                  controller: _emailController,
                   style: TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     labelText: 'Email',
@@ -57,14 +100,13 @@ class ResetPasswordScreen extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 20),
-              Padding(
+              _isLoading
+                  ? CircularProgressIndicator() // Show loading indicator
+                  : Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => OtpScreen ()),
-                    );
+                  onPressed: () async {
+                    await _resetPassword(context);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,

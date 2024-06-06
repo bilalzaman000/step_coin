@@ -1,3 +1,6 @@
+
+//NotInUseDueToPasswordResetLink
+
 import 'package:flutter/material.dart';
 import 'package:step_coin/reset/update_password.dart';
 
@@ -99,6 +102,7 @@ class _OtpScreenState extends State<OtpScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: ElevatedButton(
                   onPressed: () {
+                    // Verify OTP here. For now, directly navigating to UpdatePasswordScreen
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => UpdatePasswordScreen()),
