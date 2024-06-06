@@ -1,8 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../MainMenu.dart';
 import '../NewUser/CreateUser.dart';
 import '../reset/reset_email_screen.dart';
+
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -12,11 +15,11 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   bool _isObscure = true;
   bool _isLoading = false;
-
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late String _email;
   late String _password;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +146,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     SizedBox(height: 20),
                     _isLoading
-                        ? Center(child: CircularProgressIndicator())
+                        ? Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white))
+
+                    )
                         : ElevatedButton(
                       onPressed: _login,
                       style: ElevatedButton.styleFrom(
@@ -165,7 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         GestureDetector(
                           onTap: () {
-                            // Handle Google login
+                            _signInWithGoogle();
                           },
                           child: Image.asset(
                             'assets/Login/google.png',
@@ -271,4 +276,50 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isValidEmail(String email) {
     return RegExp(r"^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$").hasMatch(email);
   }
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _isLoading = true; // Set loading state when starting sign-in process
+    });
+    try {
+      final GoogleSignInAccount? googleSignInAccount = await _googleSignIn.signIn();
+      if (googleSignInAccount != null) {
+        final GoogleSignInAuthentication googleSignInAuthentication =
+        await googleSignInAccount.authentication;
+        final AuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: googleSignInAuthentication.accessToken,
+          idToken: googleSignInAuthentication.idToken,
+        );
+        final UserCredential userCredential =
+        await _auth.signInWithCredential(credential);
+        // Check if user is new or existing and navigate accordingly
+        if (userCredential.additionalUserInfo!.isNewUser) {
+          // Handle new user
+          // Add user data to Firestore
+          final String? userName = googleSignInAccount.displayName;
+          await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+            'Coins': 0,
+            'Name': userName,
+          });
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => MainMenu()),
+          );
+          // Navigate to a different screen or perform any action
+        } else {
+          // Handle existing user
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => MainMenu()),
+          );
+        }
+      }
+    } catch (error) {
+      print('Error signing in with Google: $error');
+    } finally {
+      setState(() {
+        _isLoading = false; // Set loading state to false after sign-in process completes
+      });
+    }
+  }
+
 }

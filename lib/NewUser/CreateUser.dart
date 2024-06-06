@@ -1,6 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+
 import '../MainMenu.dart';
+import '../welcomepage.dart';
 import 'PrivacyPolicy.dart';
 import 'TermsOfService.dart';
 
@@ -16,12 +20,11 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
   bool _isLoading = false;  // Loading state flag
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final _formKey = GlobalKey<FormState>();
-
   late String _email;
   late String _password;
   late String _confirmPassword;
-
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   @override
   Widget build(BuildContext context) {
@@ -254,6 +257,9 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
                                         email: _email,
                                         password: _password,
                                       );
+                                      await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+                                        'Coins': 0,
+                                      });
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
                                           content: Text('Account created successfully'),
@@ -294,6 +300,32 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
                           ),
                         ),
                         SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                _signInWithGoogle();
+                              },
+                              child: Image.asset(
+                                'assets/NewUser/google.png',
+                                width: 40,
+                                height: 50,
+                              ),
+                            ),
+                            SizedBox(width: 20),
+                            GestureDetector(
+                              onTap: () {
+                                // Handle Apple login
+                              },
+                              child: Image.asset(
+                                'assets/NewUser/apple.png',
+                                width: 60,
+                                height: 60,
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -328,4 +360,55 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
   bool isValidEmail(String email) {
     return RegExp(r"^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$").hasMatch(email);
   }
+
+
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _isLoading = true; // Set loading state when starting sign-in process
+    });
+    try {
+
+      final GoogleSignInAccount? googleSignInAccount = await _googleSignIn.signIn();
+      if (googleSignInAccount != null) {
+        final GoogleSignInAuthentication googleSignInAuthentication =
+        await googleSignInAccount.authentication;
+        final AuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: googleSignInAuthentication.accessToken,
+          idToken: googleSignInAuthentication.idToken,
+        );
+        final UserCredential userCredential =
+        await _auth.signInWithCredential(credential);
+        // Check if user is new or existing and navigate accordingly
+        if (userCredential.additionalUserInfo!.isNewUser) {
+          // Handle new user
+          // Add user data to Firestore
+          final String? userName = googleSignInAccount.displayName;
+          await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+            'Coins': 0,
+            'Name': userName,
+          });
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => MainMenu()),
+          );
+          // Navigate to a different screen or perform any action
+        } else {
+          // Handle existing user
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => MainMenu()),
+          );
+        }
+      }
+    } catch (error) {
+      print('Error signing in with Google: $error');
+    }
+    finally {
+      setState(() {
+        _isLoading = false; // Set loading state to false after sign-in process completes
+      });
+    }
+  }
+
 }
+
