@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../GameName.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'SubmitReview.dart';
+
 class GamePage extends StatelessWidget {
   final Game game;
 
@@ -99,7 +101,10 @@ class GamePage extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      // Add your onPressed code here!
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => SubmitReviewScreen()),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
@@ -116,8 +121,11 @@ class GamePage extends StatelessWidget {
                     onPressed: () {
                       launchURL(game.appURL); // Use appURL here
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
+                    style: ButtonStyle(
+                      backgroundColor: MaterialStateProperty.all<Color>(Colors.black),
+                      side: MaterialStateProperty.all<BorderSide>(
+                        BorderSide(color: Colors.white),
+                      ),
                     ),
                     child: Text(
                       'Download App',
@@ -125,6 +133,7 @@ class GamePage extends StatelessWidget {
                     ),
                   ),
                 ),
+
               ],
             ),
           ],

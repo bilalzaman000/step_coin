@@ -73,7 +73,7 @@ class ReviewScreen extends StatelessWidget {
                 future: fetchApps(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(child: CircularProgressIndicator());
+                    return Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white)));
                   } else if (snapshot.hasError) {
                     return Center(child: Text('Error: ${snapshot.error}'));
                   } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -99,7 +99,7 @@ class ReviewScreen extends StatelessWidget {
                                   game: Game(
                                     name: app.appTitle,
                                     imagePath: app.iconUrl,
-                                    description: '',
+                                    description: 'Please Download The App , Give 5 Star Rating , Write A Good Review , Submit the review And get Amazing Rewards',
                                     appURL: app.appURL, // Pass the appURL
                                   ),
                                 ),
