@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../GameName.dart';
-
+import 'package:url_launcher/url_launcher.dart';
 
 class GamePage extends StatelessWidget {
   final Game game;
@@ -35,7 +35,7 @@ class GamePage extends StatelessWidget {
               margin: EdgeInsets.all(5),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: Image.asset(
+                child: Image.network(
                   game.imagePath,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -114,7 +114,7 @@ class GamePage extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      // Add your onPressed code here!
+                      launchURL(game.appURL); // Use appURL here
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black,
@@ -131,5 +131,13 @@ class GamePage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void launchURL(String url) async {
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      throw 'Could not launch $url';
+    }
   }
 }

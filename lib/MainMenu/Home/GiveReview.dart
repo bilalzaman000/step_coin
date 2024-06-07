@@ -1,44 +1,10 @@
 import 'package:flutter/material.dart';
-
+import 'package:step_coin/Api/ReviewApi/AppInfo.dart';
+import '../../Api/ReviewApi/FetchData.dart';
 import 'GameName.dart';
 import 'Review/GamePage.dart';
 
-
 class ReviewScreen extends StatelessWidget {
-  final List<Game> games = [
-    Game(
-      name: 'Fifa 23',
-      imagePath: 'assets/Games/Fifa.jpg',
-      description: 'FIFA 23 is the latest installment in the popular football simulation series.',
-    ),
-    Game(
-      name: 'Pubg',
-      imagePath: 'assets/Games/Pubg.jpg',
-      description: 'PUBG is a battle royale shooter that pits 100 players against each other in a struggle for survival.',
-    ),
-    Game(
-      name: 'Volarant',
-      imagePath: 'assets/Games/Volarant.jpg',
-      description: 'Valorant is a team-based tactical shooter and first-person shooter set in the near future.',
-    ),
-    Game(
-      name: 'Genshin',
-      imagePath: 'assets/Games/Genshin.jpg',
-      description: 'Genshin Impact is an open-world action RPG where players can explore a fantastical world.',
-    ),
-    Game(
-      name: 'Stumble Guys',
-      imagePath: 'assets/Games/StumbleGuys.jpg',
-      description: 'Stumble Guys is a massive multiplayer party knockout game with up to 32 players online.',
-    ),
-    Game(
-      name: 'Mobile Legends',
-      imagePath: 'assets/Games/MobileLegends.jpg',
-      description: 'Mobile Legends is a mobile multiplayer online battle arena (MOBA) game.',
-    ),
-    // Add more games as needed
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -58,67 +24,97 @@ class ReviewScreen extends StatelessWidget {
           },
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Image.asset('assets/Coin.png', width: 50, height: 50),
-                      SizedBox(width: 8),
-                      Text(
-                        '500',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 50,
+      body: Column(
+        children: [
+          Center(
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset('assets/Coin.png', width: 50, height: 50),
+                    SizedBox(width: 8),
+                    Text(
+                      '500',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 50,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Coins',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                          ),
                         ),
-                      ),
-                      SizedBox(width: 8),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Coins',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                            ),
+                        Text(
+                          'per Review',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 16,
                           ),
-                          Text(
-                            'per Review',
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
             ),
-            SizedBox(height: 20),
-            Expanded(
-              child: ListView.builder(
-                itemCount: games.length,
-                itemBuilder: (context, index) {
-                  return GameTile(game: games[index], onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => GamePage(game: games[index])),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: FutureBuilder<List<AppInfo>>(
+                future: fetchApps(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(child: Text('No data found'));
+                  } else {
+                    final apps = snapshot.data!;
+                    return ListView.builder(
+                      itemCount: apps.length,
+                      itemBuilder: (context, index) {
+                        final app = apps[index];
+                        return GameTile(
+                          game: Game(
+                            name: app.appTitle,
+                            imagePath: app.iconUrl,
+                            description: '',
+                            appURL: app.appURL, // Pass the appURL
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => GamePage(
+                                  game: Game(
+                                    name: app.appTitle,
+                                    imagePath: app.iconUrl,
+                                    description: '',
+                                    appURL: app.appURL, // Pass the appURL
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
                     );
-                  });
+                  }
                 },
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -147,7 +143,7 @@ class GameTile extends StatelessWidget {
             color: Colors.white,
           ),
           child: ClipOval(
-            child: Image.asset(
+            child: Image.network(
               game.imagePath,
               fit: BoxFit.cover,
             ),
