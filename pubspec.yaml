@@ -41,6 +41,7 @@ dependencies:
   url_launcher: ^6.3.0
   image_picker: ^1.1.2
   firebase_storage: ^12.0.0
+  health: ^4.1.1
 
 
 

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../GameName.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 
+import '../AppClass.dart';
 import 'SubmitReview.dart';
 
 class GamePage extends StatelessWidget {
@@ -103,7 +104,7 @@ class GamePage extends StatelessWidget {
                     onPressed: () {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (context) => SubmitReviewScreen()),
+                        MaterialPageRoute(builder: (context) => SubmitReviewScreen(orderId: game.orderId,)),
                       );
                     },
                     style: ElevatedButton.styleFrom(
