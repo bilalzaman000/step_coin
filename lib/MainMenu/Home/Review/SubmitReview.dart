@@ -32,38 +32,44 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: isDarkMode ? Colors.black : Colors.white,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: isDarkMode ? Colors.white : Colors.black),
           onPressed: () {
             Navigator.pop(context);
           },
         ),
-        title: Text('Submit Review', style: TextStyle(color: Colors.white)),
+        title: Text(
+          'Submit Review',
+          style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
+        ),
       ),
       body: Container(
-        color: Colors.black,
+        color: isDarkMode ? Colors.black : Colors.white,
         padding: EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextField(
               controller: _reviewController,
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
               maxLines: 6,
               decoration: InputDecoration(
                 labelText: 'Write Same Review You Submitted',
-                labelStyle: TextStyle(color: Colors.white),
+                labelStyle: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
                 border: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white),
+                  borderSide: BorderSide(color: isDarkMode ? Colors.white : Colors.black),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white),
+                  borderSide: BorderSide(color: isDarkMode ? Colors.white : Colors.black),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white),
+                  borderSide: BorderSide(color: isDarkMode ? Colors.white : Colors.black),
                 ),
               ),
             ),
@@ -84,7 +90,10 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
                   child: Container(
                     width: 100,
                     height: 100,
-                    color: Colors.grey[800],
+                    decoration: BoxDecoration(
+                      color: isDarkMode ? Colors.black : Colors.white,
+                      border: Border.all(color: isDarkMode ? Colors.white : Colors.black),
+                    ),
                     child: _pickedImages[index] != null
                         ? Stack(
                       fit: StackFit.expand,
@@ -94,13 +103,17 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
                           Center(
                             child: CircularProgressIndicator(
                               value: _uploadProgress[index] / 100,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                  isDarkMode ? Colors.white : Colors.black),
                             ),
                           ),
                       ],
                     )
                         : Center(
-                      child: Icon(Icons.add, color: Colors.white),
+                      child: Icon(
+                        Icons.add,
+                        color: isDarkMode ? Colors.white : Colors.black,
+                      ),
                     ),
                   ),
                 );
@@ -111,11 +124,15 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
               child: ElevatedButton(
                 onPressed: _isUploading ? null : _submitReview,
                 style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.black, backgroundColor: Colors.white, // This sets the text color to black
+                  foregroundColor: isDarkMode ? Colors.white : Colors.black,
+                  backgroundColor: isDarkMode ? Colors.white : Colors.black,
                 ),
                 child: _isUploading
                     ? CircularProgressIndicator()
-                    : Text('Submit Review', style: TextStyle(color: Colors.black)),
+                    : Text(
+                  'Submit Review',
+                  style: TextStyle(color: isDarkMode ? Colors.black : Colors.white),
+                ),
               ),
             ),
           ],

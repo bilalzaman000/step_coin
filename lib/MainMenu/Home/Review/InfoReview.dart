@@ -10,6 +10,9 @@ class InfoReview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Review Info'),
@@ -34,6 +37,7 @@ class InfoReview extends StatelessWidget {
 
             Color borderColor;
             Color claimButtonColor;
+            Color coinTextColor;
 
             switch (status) {
               case 'Approved':
@@ -49,6 +53,12 @@ class InfoReview extends StatelessWidget {
                 borderColor = Colors.orange;
                 claimButtonColor = Colors.grey;
                 break;
+            }
+
+            if (isDarkMode) {
+              coinTextColor = Colors.white;
+            } else {
+              coinTextColor = Colors.black;
             }
 
             return Padding(
@@ -82,7 +92,7 @@ class InfoReview extends StatelessWidget {
                         Text(
                           '500',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: coinTextColor,
                             fontSize: 50,
                           ),
                         ),
@@ -93,14 +103,14 @@ class InfoReview extends StatelessWidget {
                             Text(
                               'Coins',
                               style: TextStyle(
-                                color:  Colors.white,
+                                color: coinTextColor,
                                 fontSize: 16,
                               ),
                             ),
                             Text(
                               'Earned',
                               style: TextStyle(
-                                color:Colors.white,
+                                color: coinTextColor,
                                 fontSize: 16,
                               ),
                             ),
@@ -245,6 +255,8 @@ class InfoReview extends StatelessWidget {
       throw e;
     }
   }
+
+
 
   void _claimReward(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
