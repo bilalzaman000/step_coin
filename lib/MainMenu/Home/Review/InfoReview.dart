@@ -27,7 +27,6 @@ class InfoReview extends StatelessWidget {
             final data = snapshot.data!.docs.first.data() as Map<String, dynamic>;
             final appName = data['appName'] ?? 'Unknown App';
             final imageUrl = data['appImageURL'] ?? '';
-            final appUrl = data['appURL'] ?? '';
             final review = data['review'] ?? '';
             final status = data['ReviewStatus'] ?? 'In Review';
             final timestamp = (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
@@ -75,32 +74,49 @@ class InfoReview extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset('assets/Coin.png', width: 50, height: 50),
+                        SizedBox(width: 8),
+                        Text(
+                          '500',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 50,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Coins',
+                              style: TextStyle(
+                                color:  Colors.white,
+                                fontSize: 16,
+                              ),
+                            ),
+                            Text(
+                              'Earned',
+                              style: TextStyle(
+                                color:Colors.white,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10),
+
                     Center(
                       child: Text(
                         appName,
                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                     ),
-                    SizedBox(height: 10),
-                    Center(
-                      child: ElevatedButton(
-                        onPressed: appUrl.isNotEmpty
-                            ? () async {
-                          if (await canLaunch(appUrl)) {
-                            await launch(appUrl);
-                          } else {
-                            throw 'Could not launch $appUrl';
-                          }
-                        }
-                            : null,
-                        style: ElevatedButton.styleFrom(
-                          foregroundColor: Colors.black,
-                          backgroundColor: Colors.white,
-                          minimumSize: Size(MediaQuery.of(context).size.width * 0.8, 36),
-                        ),
-                        child: Text('Download from Play Store'),
-                      ),
-                    ),
+
                     SizedBox(height: 20),
                     Container(
                       padding: const EdgeInsets.all(8.0),
@@ -110,7 +126,7 @@ class InfoReview extends StatelessWidget {
                       ),
                       child: TextFormField(
                         initialValue: review,
-                        maxLines: 4,
+                        maxLines: 2,
                         readOnly: true,
                         decoration: InputDecoration(
                           border: InputBorder.none,
@@ -191,7 +207,7 @@ class InfoReview extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                           foregroundColor: Colors.black,
                           backgroundColor: claimButtonColor,
-                          minimumSize: Size(MediaQuery.of(context).size.width * 0.6, 36),
+                          minimumSize: Size(MediaQuery.of(context).size.width * 0.7, 45),
                         ),
                         child: Text('Claim'),
                       ),
