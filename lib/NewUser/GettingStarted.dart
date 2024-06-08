@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
+
 import 'CreateUser.dart';
 
 class GettingStartedScreen extends StatefulWidget {
@@ -20,8 +21,11 @@ class _GettingStartedScreenState extends State<GettingStartedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkTheme = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
           PageView(
@@ -36,16 +40,19 @@ class _GettingStartedScreenState extends State<GettingStartedScreen> {
                 image: 'assets/NewUser/horse.png',
                 title: 'Play Around!',
                 description: 'Forget everything you know about the chaotic world of earning. It can be easy.',
+                isDarkTheme: isDarkTheme,
               ),
               _buildPage(
                 image: 'assets/NewUser/Coins.png',
                 title: 'Earn Coins!',
                 description: 'Forget everything you know about the chaotic world of earning. It can be easy.',
+                isDarkTheme: isDarkTheme,
               ),
               _buildPage(
                 image: 'assets/NewUser/Bank.png',
                 title: 'Easy Payouts!',
                 description: 'Forget everything you know about the chaotic world of earning. It can be easy.',
+                isDarkTheme: isDarkTheme,
               ),
             ],
           ),
@@ -61,7 +68,7 @@ class _GettingStartedScreenState extends State<GettingStartedScreen> {
                   count: 3,
                   effect: WormEffect(
                     dotColor: Colors.grey,
-                    activeDotColor: Colors.white,
+                    activeDotColor: isDarkTheme ? Colors.white : Colors.black,
                     dotHeight: 12,
                     dotWidth: 12,
                   ),
@@ -69,7 +76,7 @@ class _GettingStartedScreenState extends State<GettingStartedScreen> {
                 IconButton(
                   icon: Icon(
                     Icons.arrow_forward,
-                    color: Colors.white,
+                    color: isDarkTheme ? Colors.white : Colors.black,
                     size: 30,
                   ),
                   onPressed: () {
@@ -94,9 +101,14 @@ class _GettingStartedScreenState extends State<GettingStartedScreen> {
     );
   }
 
-  Widget _buildPage({required String image, required String title, required String description}) {
+  Widget _buildPage({
+    required String image,
+    required String title,
+    required String description,
+    required bool isDarkTheme,
+  }) {
     return Container(
-      color: Colors.black,
+      color: isDarkTheme ? Colors.black : Colors.white,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -110,7 +122,11 @@ class _GettingStartedScreenState extends State<GettingStartedScreen> {
           SizedBox(height: 20), // Add space between image and text
           Text(
             title,
-            style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: isDarkTheme ? Colors.white : Colors.black,
+            ),
             textAlign: TextAlign.left, // Align title text to the left
           ),
           SizedBox(height: 10),
@@ -118,7 +134,10 @@ class _GettingStartedScreenState extends State<GettingStartedScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20), // Add padding for description text
             child: Text(
               description,
-              style: TextStyle(fontSize: 16, color: Colors.white),
+              style: TextStyle(
+                fontSize: 16,
+                color: isDarkTheme ? Colors.white : Colors.black,
+              ),
               textAlign: TextAlign.left, // Align description text to the left
             ),
           ),

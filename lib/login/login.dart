@@ -2,10 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:provider/provider.dart';
 import '../MainMenu.dart';
 import '../NewUser/CreateUser.dart';
 import '../reset/reset_email_screen.dart';
-
+import '../Theme/ThemeProvider.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -23,18 +24,28 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final theme = Theme.of(context);
+
+    // Define colors based on the current theme
+    Color appBarColor = theme.brightness == Brightness.light ? Colors.white : Colors.black;
+    Color buttonBackgroundColor = Colors.black;
+    Color buttonTextColor = Colors.white;
+    Color scaffoldBackgroundColor = theme.brightness == Brightness.light ? Colors.white : Colors.black;
+    Color textColor = theme.textTheme.bodyLarge!.color!;
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: appBarColor,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: textColor),
           onPressed: () {
             Navigator.pop(context);
           },
         ),
       ),
-      backgroundColor: Colors.black,
+      backgroundColor: scaffoldBackgroundColor,
       body: SingleChildScrollView(
         child: Form(
           key: _formKey,
@@ -54,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Text(
                     'StepCoin',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: textColor,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
@@ -65,7 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Text(
                 'Login To Your Account',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: textColor,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -77,12 +88,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     TextFormField(
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: textColor),
                       decoration: InputDecoration(
                         labelText: 'Email',
-                        labelStyle: TextStyle(color: Colors.white),
+                        labelStyle: TextStyle(color: textColor),
                         border: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.white),
+                          borderSide: BorderSide(color: textColor),
                         ),
                       ),
                       validator: (value) {
@@ -100,18 +111,18 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     SizedBox(height: 10),
                     TextFormField(
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: textColor),
                       obscureText: _isObscure,
                       decoration: InputDecoration(
                         labelText: 'Password',
-                        labelStyle: TextStyle(color: Colors.white),
+                        labelStyle: TextStyle(color: textColor),
                         border: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.white),
+                          borderSide: BorderSide(color: textColor),
                         ),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _isObscure ? Icons.visibility : Icons.visibility_off,
-                            color: Colors.white,
+                            color: textColor,
                           ),
                           onPressed: () {
                             setState(() {
@@ -141,27 +152,29 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Text(
                         'Forgot your Password?',
                         textAlign: TextAlign.end,
-                        style: TextStyle(color: Colors.white),
+                        style: TextStyle(color: textColor),
                       ),
                     ),
                     SizedBox(height: 20),
                     _isLoading
-                        ? Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white))
-
+                        ? Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(textColor),
+                      ),
                     )
                         : ElevatedButton(
                       onPressed: _login,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
+                        backgroundColor: buttonBackgroundColor,
                         padding: EdgeInsets.symmetric(vertical: 15),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
-                          side: BorderSide(color: Colors.white),
+                          side: BorderSide(color: textColor),
                         ),
                       ),
                       child: Text(
                         'Login',
-                        style: TextStyle(color: Colors.black),
+                        style: TextStyle(color: buttonTextColor),
                       ),
                     ),
                     SizedBox(height: 20),
@@ -213,17 +226,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
+                backgroundColor: buttonBackgroundColor,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
-                  side: BorderSide(color: Colors.white),
+                  side: BorderSide(color: textColor),
                 ),
               ),
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 15),
                 child: Text(
                   'Create A New Account',
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(color: buttonTextColor),
                 ),
               ),
             ),
@@ -272,10 +285,10 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
   }
-
   bool isValidEmail(String email) {
     return RegExp(r"^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$").hasMatch(email);
   }
+
   Future<void> _signInWithGoogle() async {
     setState(() {
       _isLoading = true; // Set loading state when starting sign-in process
@@ -321,5 +334,4 @@ class _LoginScreenState extends State<LoginScreen> {
       });
     }
   }
-
 }

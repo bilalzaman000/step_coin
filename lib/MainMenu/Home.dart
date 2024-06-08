@@ -2,9 +2,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:health/health.dart';
+import 'package:provider/provider.dart';
 import 'dart:math';
 
+import '../Theme/ThemeProvider.dart';
 import 'Home/ReviewScreen.dart';
+
 
 class HomePage extends StatefulWidget {
   @override
@@ -90,12 +93,12 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: Colors.black,
-          title: Text('Please Wait...', style: TextStyle(color: Colors.white)),
-          content: Text('Coming soon', style: TextStyle(color: Colors.white)),
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          title: Text('Please Wait...', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+          content: Text('Coming soon', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
           actions: [
             TextButton(
-              child: Text('OK', style: TextStyle(color: Colors.white)),
+              child: Text('OK', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -108,73 +111,78 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    Color appBarColor = theme.brightness == Brightness.light ? Colors.white : Colors.black;
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: Padding(
+      backgroundColor: appBarColor,
+       appBar: AppBar(
+    backgroundColor: theme.brightness == Brightness.light ? Colors.white : Colors.black,
+      title: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text('   StepCoins', style: TextStyle(color: theme.brightness == Brightness.light ? Colors.black : Colors.white)),
+          Row(
+            children: [
+              Image.asset('assets/Coin.png', height: 24),
+              SizedBox(width: 8),
+              Text('$_coinValue', style: TextStyle(fontSize: 24, color: theme.brightness == Brightness.light ? Colors.black : Colors.white)),
+              SizedBox(width: 8),
+            ],
+          ),
+        ],
+      ),
+    ),
+
+    body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'StepCoins',
-                  style: TextStyle(color: Colors.white, fontSize: 24),
-                ),
-                Row(
-                  children: [
-                    Image.asset('assets/Coin.png', height: 24),
-                    SizedBox(width: 8),
-                    Text(
-                      '$_coinValue',
-                      style: TextStyle(color: Colors.white, fontSize: 24),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            SizedBox(height: 20),
-            // Meter
-            Center(
-              child: CustomPaint(
-                size: Size(200, 200), // Adjust the size
-                painter: StepMeterPainter(_stepsAnimation.value),
-                child: Container(
-                  width: 200,
-                  height: 200,
-                  child: Center(
-                    child: AnimatedBuilder(
-                      animation: _animationController,
-                      builder: (context, child) {
-                        return Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Steps: ${_stepsAnimation.value.toInt()}',
-                              style: TextStyle(color: Colors.white, fontSize: 18),
-                            ),
-                            Text(
-                              'Coins: ${_coinsAnimation.value.toInt()}',
-                              style: TextStyle(color: Colors.white, fontSize: 18),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
+            Container(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(30),
+              ),
+              padding: EdgeInsets.all(2.0),
+              height: MediaQuery.of(context).size.height * 0.25,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text('Total Steps', style: TextStyle(fontSize: 18, color: theme.colorScheme.onSurface)),
+                  SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset('assets/Home/Steps.png', height: 50),
+                      SizedBox(width: 8),
+                      Text('${_steps.toString()}', style: TextStyle(fontSize: 50, color: theme.colorScheme.onSurface)),
+                    ],
                   ),
-                ),
+                  SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset('assets/Coin.png', height: 24),
+                      SizedBox(width: 8),
+                      Text('${(_steps / 3).toInt()}', style: TextStyle(fontSize: 18, color: theme.colorScheme.onSurface)),
+                      SizedBox(width: 6),
+                      Text('Earned Today', style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurface)),
+                    ],
+                  ),
+                ],
               ),
             ),
-            SizedBox(height: 30),
-            // List view
+            SizedBox(height: 20),
+            Text('More Ways to Earn Coins', style: TextStyle(color: theme.colorScheme.onBackground, fontSize: 18)),
+            SizedBox(height: 10),
             Expanded(
               child: ListView(
                 children: [
-                  _buildListItem('Watch an ad', 77, Icons.video_library, context, WatchAdScreen()),
-                  _buildListItem('Give a Review', 500, Icons.star, context, ReviewScreen()),
-                  _buildListItem('Submit A Survey', 77, Icons.edit, context, null, true),
-                  _buildListItem('Play A Game', 77, Icons.videogame_asset, context, null, true),
+                  _buildListItem('Watch an ad', 77, 'assets/Home/Video.png', context, WatchAdScreen()),
+                  _buildListItem('Give a Review', 500, 'assets/Home/Star.png', context, ReviewScreen()),
+                  _buildListItem('Submit A Survey', 77, 'assets/Home/Pen.png', context, null, true),
+                  _buildListItem('Play A Game', 77, 'assets/Home/Cube.png', context, null, true),
                 ],
               ),
             ),
@@ -184,10 +192,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _buildListItem(String title, int coins, IconData icon, BuildContext context, Widget? nextScreen, [bool showComingSoon = false]) {
+  Widget _buildListItem(String title, int coins, String imagePath, BuildContext context, Widget? nextScreen, [bool showComingSoon = false]) {
     return Card(
-      color: Colors.grey[900],
-      margin: EdgeInsets.symmetric(vertical: 8.0), // Adjust margin for better spacing
+      color: Theme.of(context).colorScheme.surface,
+      margin: EdgeInsets.symmetric(vertical: 8.0),
       child: ListTile(
         onTap: () {
           if (showComingSoon) {
@@ -199,10 +207,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             );
           }
         },
-        leading: Icon(icon, color: Colors.blue),
+        leading: CircleAvatar(
+          backgroundImage: AssetImage(imagePath),
+          radius: 24,
+        ),
         title: Text(
           title,
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -211,7 +222,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             SizedBox(width: 8),
             Text(
               '$coins',
-              style: TextStyle(color: Colors.white, fontSize: 24), // Adjust font size
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 24),
             ),
           ],
         ),
@@ -219,87 +230,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 }
-
-class StepMeterPainter extends CustomPainter {
-  final double steps;
-  StepMeterPainter(this.steps);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    Paint paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 20;
-
-    double totalSteps = 6000;
-    double anglePerStep = 2 * pi / totalSteps;
-
-    // Draw the full grey circle
-    paint.color = Colors.grey;
-    canvas.drawArc(
-      Rect.fromCircle(center: Offset(size.width / 2, size.height / 2), radius: size.width / 2),
-      0,
-      2 * pi,
-      false,
-      paint,
-    );
-
-    // Draw the arc in sections
-    double startAngle = -pi / 2;
-
-    // Orange section
-    paint.color = Colors.yellow[500]!;
-    double orangeSweepAngle = anglePerStep * min(steps, 2000);
-    if (orangeSweepAngle > 0) {
-      canvas.drawArc(
-        Rect.fromCircle(center: Offset(size.width / 2, size.height / 2), radius: size.width / 2),
-        startAngle,
-        orangeSweepAngle,
-        false,
-        paint,
-      );
-    }
-
-    // Blue section
-    double blueSweepAngle = 0;
-    if (steps > 2000) {
-      paint.color = Colors.yellowAccent;
-      double blueStartAngle = startAngle + orangeSweepAngle;
-      blueSweepAngle = anglePerStep * min(steps - 2000, 2000);
-      if (blueSweepAngle > 0) {
-        canvas.drawArc(
-          Rect.fromCircle(center: Offset(size.width / 2, size.height / 2), radius: size.width / 2),
-          blueStartAngle,
-          blueSweepAngle,
-          false,
-          paint,
-        );
-      }
-    }
-
-    // Yellow section
-    if (steps > 4000) {
-      paint.color = Colors.yellow;
-      double yellowStartAngle = startAngle + orangeSweepAngle + blueSweepAngle;
-      double yellowSweepAngle = anglePerStep * min(steps - 4000, 2000);
-      if (yellowSweepAngle > 0) {
-        canvas.drawArc(
-          Rect.fromCircle(center: Offset(size.width / 2, size.height / 2), radius: size.width / 2),
-          yellowStartAngle,
-          yellowSweepAngle,
-          false,
-          paint,
-        );
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) {
-    return true;
-  }
-}
-
-
 
 class WatchAdScreen extends StatelessWidget {
   @override

@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 
+
 import 'NewUser/GettingStarted.dart';
 import 'login/login.dart';
+
 
 class WelcomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkTheme = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
           Positioned(
@@ -47,7 +52,7 @@ class WelcomePage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: isDarkTheme ? Colors.white : Colors.black,
                   ),
                 ),
                 SizedBox(height: 10), // Adjusted spacing
@@ -58,7 +63,7 @@ class WelcomePage extends StatelessWidget {
                       'Seamless payouts, ',
                       style: TextStyle(
                         fontSize: 20,
-                        color: Colors.white,
+                        color: isDarkTheme ? Colors.white : Colors.black,
                       ),
                     ),
                     Text(
@@ -66,7 +71,7 @@ class WelcomePage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: isDarkTheme ? Colors.white : Colors.black,
                       ),
                     ),
                   ],
@@ -90,7 +95,7 @@ class WelcomePage extends StatelessWidget {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
+                    backgroundColor: isDarkTheme ? Colors.white : Colors.black,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -99,7 +104,7 @@ class WelcomePage extends StatelessWidget {
                     padding: EdgeInsets.symmetric(vertical: 15),
                     child: Text(
                       'Get Started',
-                      style: TextStyle(color: Colors.black),
+                      style: TextStyle(color: isDarkTheme ? Colors.black : Colors.white),
                     ),
                   ),
                 ),
@@ -112,7 +117,7 @@ class WelcomePage extends StatelessWidget {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
+                    backgroundColor: isDarkTheme ? Colors.black : Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -121,7 +126,10 @@ class WelcomePage extends StatelessWidget {
                     padding: EdgeInsets.symmetric(vertical: 15),
                     child: Text(
                       'Login to your account',
-                      style: TextStyle(color: Colors.white, decoration: TextDecoration.underline), // Underline added here
+                      style: TextStyle(
+                        color: isDarkTheme ? Colors.white : Colors.black,
+                        decoration: TextDecoration.underline,
+                      ),
                     ),
                   ),
                 ),

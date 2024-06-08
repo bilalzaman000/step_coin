@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../Api/ReviewApi/FetchData.dart';
 import 'AppClass.dart';
 import 'Review/AppPage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
 import 'Review/InfoReview.dart'; // Import the InfoReview.dart file
+import '../../Theme/ThemeProvider.dart';
 
 class ReviewScreen extends StatefulWidget {
   @override
@@ -36,6 +37,10 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
   }
 
   Future<void> filterReviewedApps() async {
+    setState(() {
+      isReviewedLoading = true; // Set loading to true initially
+    });
+
     String userId = FirebaseAuth.instance.currentUser!.uid;
     List<AppInfo> reviewed = [];
     List<AppInfo> unreviewed = [];
@@ -67,18 +72,22 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final theme = themeProvider.getTheme();
+    final isDarkTheme = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: theme.appBarTheme.backgroundColor,
         elevation: 0,
         centerTitle: true,
         title: Text(
           'Give A Review',
-          style: TextStyle(color: Colors.white),
+          style: theme.appBarTheme.titleTextStyle,
         ),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: theme.iconTheme.color),
           onPressed: () {
             Navigator.pop(context);
           },
@@ -95,7 +104,7 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
                   Text(
                     '500',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: isDarkTheme ? Colors.white : Colors.black,
                       fontSize: 50,
                     ),
                   ),
@@ -106,14 +115,14 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
                       Text(
                         'Coins',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: isDarkTheme ? Colors.white : Colors.black,
                           fontSize: 16,
                         ),
                       ),
                       Text(
                         'per Review',
                         style: TextStyle(
-                          color: Colors.grey,
+                          color: isDarkTheme ? Colors.grey : Colors.black54,
                           fontSize: 16,
                         ),
                       ),
@@ -124,9 +133,9 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
               SizedBox(height: 10),
               TabBar(
                 controller: _tabController,
-                labelColor: Colors.white,
-                unselectedLabelColor: Colors.white,
-                indicatorColor: Colors.blue,
+                labelColor: isDarkTheme ? Colors.white : Colors.black,
+                unselectedLabelColor: isDarkTheme ? Colors.white70 : Colors.black54,
+                indicatorColor: isDarkTheme ? Colors.white : Colors.black, // Set indicator color based on theme
                 tabs: [
                   Tab(text: 'All Apps'),
                   Tab(text: 'Reviewed Apps'),
@@ -139,28 +148,28 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
       body: isLoading
           ? Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          valueColor: AlwaysStoppedAnimation<Color>(isDarkTheme ? Colors.white : Colors.black),
         ),
       )
           : TabBarView(
         controller: _tabController,
         children: [
-          buildAppList(allApps),
+          buildAppList(allApps, theme),
           isReviewedLoading
               ? Center(
             child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              valueColor: AlwaysStoppedAnimation<Color>(isDarkTheme ? Colors.white : Colors.black),
             ),
           )
-              : buildAppList(reviewedApps),
+              : buildAppList(reviewedApps, theme),
         ],
       ),
     );
   }
 
-  Widget buildAppList(List<AppInfo> apps) {
+  Widget buildAppList(List<AppInfo> apps, ThemeData theme) {
     if (apps.isEmpty) {
-      return Center(child: Text('No data found', style: TextStyle(color: Colors.white)));
+      return Center(child: Text('No data found', style: theme.textTheme.bodyLarge));
     }
 
     return ListView.builder(
@@ -214,10 +223,11 @@ class GameTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Provider.of<ThemeProvider>(context).getTheme();
     return Container(
       margin: EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.grey[800],
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(10),
       ),
       child: ListTile(
@@ -237,11 +247,13 @@ class GameTile extends StatelessWidget {
         ),
         title: Text(
           game.name,
-          style: TextStyle(color: Colors.white),
+          style: theme.textTheme.bodyLarge,
         ),
-        trailing: Icon(Icons.arrow_forward_ios, color: Colors.white),
+        trailing: Icon(Icons.arrow_forward_ios, color: theme.iconTheme.color),
         onTap: onTap,
       ),
     );
   }
 }
+
+
