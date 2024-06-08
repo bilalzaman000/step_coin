@@ -10,18 +10,21 @@ class AppPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: theme.appBarTheme.backgroundColor,
         elevation: 0,
         centerTitle: true,
         title: Text(
-          'Game Details',
-          style: TextStyle(color: Colors.white),
+          'App Details',
+          style: theme.appBarTheme.titleTextStyle,
         ),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: theme.iconTheme.color),
           onPressed: () {
             Navigator.pop(context);
           },
@@ -55,7 +58,7 @@ class AppPage extends StatelessWidget {
                       Text(
                         '500',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: theme.textTheme.headlineSmall?.color,
                           fontSize: 50,
                         ),
                       ),
@@ -66,14 +69,14 @@ class AppPage extends StatelessWidget {
                           Text(
                             'Coins',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: theme.textTheme.headlineSmall?.color,
                               fontSize: 16,
                             ),
                           ),
                           Text(
                             'per Review',
                             style: TextStyle(
-                              color: Colors.grey,
+                              color: theme.textTheme.bodyLarge?.color,
                               fontSize: 16,
                             ),
                           ),
@@ -87,12 +90,12 @@ class AppPage extends StatelessWidget {
             SizedBox(height: 16),
             Text(
               game.name,
-              style: TextStyle(color: Colors.white, fontSize: 24),
+              style: TextStyle(color: theme.textTheme.headlineSmall?.color, fontSize: 24),
             ),
             SizedBox(height: 8),
             Text(
               game.description,
-              style: TextStyle(color: Colors.white, fontSize: 16),
+              style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontSize: 16),
             ),
             SizedBox(height: 16),
             Row(
@@ -111,30 +114,22 @@ class AppPage extends StatelessWidget {
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
+                      foregroundColor: isDarkMode ? Colors.black : Colors.white, backgroundColor: isDarkMode ? Colors.white : Colors.black,
                     ),
-                    child: Text(
-                      'Submit Proof',
-                      style: TextStyle(color: Colors.black),
-                    ),
+                    child: Text('Submit Proof'),
                   ),
                 ),
                 SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      launchURL(game.appURL); // Use appURL here
+                      launchURL(game.appURL);
                     },
-                    style: ButtonStyle(
-                      backgroundColor: MaterialStateProperty.all<Color>(Colors.black),
-                      side: MaterialStateProperty.all<BorderSide>(
-                        BorderSide(color: Colors.white),
-                      ),
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: isDarkMode ? Colors.white : Colors.black, backgroundColor: isDarkMode ? Colors.black : Colors.white,
+                      side: BorderSide(color: isDarkMode ? Colors.white : Colors.black),
                     ),
-                    child: Text(
-                      'Download App',
-                      style: TextStyle(color: Colors.white),
-                    ),
+                    child: Text('Download App'),
                   ),
                 ),
               ],

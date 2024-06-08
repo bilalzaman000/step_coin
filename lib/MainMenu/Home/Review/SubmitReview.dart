@@ -111,7 +111,7 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
               child: ElevatedButton(
                 onPressed: _isUploading ? null : _submitReview,
                 style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.black, backgroundColor: Colors.white,
+                  foregroundColor: Colors.black, backgroundColor: Colors.white, // This sets the text color to black
                 ),
                 child: _isUploading
                     ? CircularProgressIndicator()
