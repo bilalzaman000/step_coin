@@ -196,7 +196,7 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => GamePage(
+                  builder: (context) => AppPage(
                     game: Game(
                       name: app.appTitle,
                       imagePath: app.iconUrl,

@@ -7,9 +7,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 class SubmitReviewScreen extends StatefulWidget {
-  final int orderId; // Pass the order ID to this screen
+  final int orderId;
+  final String appName;
+  final String appURL;
+  final String appImageURL;
 
-  SubmitReviewScreen({required this.orderId});
+  SubmitReviewScreen({
+    required this.orderId,
+    required this.appName,
+    required this.appURL,
+    required this.appImageURL,
+  });
 
   @override
   _SubmitReviewScreenState createState() => _SubmitReviewScreenState();
@@ -100,16 +108,15 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
             ),
             SizedBox(height: 20),
             Center(
-                child: ElevatedButton(
-                  onPressed: _isUploading ? null : _submitReview,
-                  style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.black, backgroundColor: Colors.white, // This sets the text color to black
-                  ),
-                  child: _isUploading
-                      ? CircularProgressIndicator()
-                      : Text('Submit Review', style: TextStyle(color: Colors.black)),
-                )
-
+              child: ElevatedButton(
+                onPressed: _isUploading ? null : _submitReview,
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.black, backgroundColor: Colors.white,
+                ),
+                child: _isUploading
+                    ? CircularProgressIndicator()
+                    : Text('Submit Review', style: TextStyle(color: Colors.black)),
+              ),
             ),
           ],
         ),
@@ -146,7 +153,11 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
         'review': _reviewController.text,
         'images': imageUrls,
         'timestamp': FieldValue.serverTimestamp(),
-        'orderId': widget.orderId, // Save the order ID
+        'orderId': widget.orderId,
+        'ReviewStatus': 'In Review',
+        'appName': widget.appName,
+        'appURL': widget.appURL,
+        'appImageURL': widget.appImageURL,
       });
 
       ScaffoldMessenger.of(context).showSnackBar(

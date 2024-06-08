@@ -60,14 +60,14 @@ class WelcomePage extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Seamless payouts, ',
+                      'Easy money  ',
                       style: TextStyle(
                         fontSize: 20,
                         color: isDarkTheme ? Colors.white : Colors.black,
                       ),
                     ),
                     Text(
-                      'at your fingertips',
+                      'with your footsteps',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
