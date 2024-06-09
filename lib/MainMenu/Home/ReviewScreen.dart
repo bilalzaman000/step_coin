@@ -30,6 +30,7 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
         isLoading = false;
       });
       filterReviewedApps();
+      showSortingPopup(); // Show the popup after loading is complete
     });
     FirebaseFirestore.instance.collection('Reviews').snapshots().listen((snapshot) {
       filterReviewedApps();
@@ -57,6 +58,26 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
       allApps = unreviewed; // Update allApps to only include unreviewed apps
       isReviewedLoading = false; // Set loading to false after filtering
     });
+  }
+
+  Future<void> showSortingPopup() async {
+    // Show the popup
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Please Wait'),
+          content: Text('Data is being sorted...'),
+        );
+      },
+    );
+
+    // Wait for 3 seconds
+    await Future.delayed(Duration(seconds: 5));
+
+    // Dismiss the popup
+    Navigator.of(context).pop();
   }
 
   Future<bool> hasReviewed(String userId, int orderId) async {
