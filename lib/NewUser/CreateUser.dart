@@ -256,7 +256,11 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
                           password: _password,
                         );
                         await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+                          'Name': 'userName',
                           'Coins': 0,
+                          'Review_Coins':0,
+                          'Ad_Coins':0,
+                          'Redeemed_Coins':0,
                         });
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -389,6 +393,9 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
           await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
             'Coins': 0,
             'Name': userName,
+            'Review_Coins':0,
+            'Ad_Coins':0,
+            'Redeemed_Coins':0,
           });
           Navigator.pushReplacement(
             context,

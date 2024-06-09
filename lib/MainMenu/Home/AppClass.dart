@@ -3,13 +3,15 @@ class Game {
   final String imagePath;
   final String description;
   final String appURL;
-  final int orderId; // Add the orderId field
+  final int orderId;
+  final String? reviewStatus; // Add this line
 
   Game({
     required this.name,
     required this.imagePath,
     required this.description,
     required this.appURL,
-    required this.orderId, // Include the orderId field in the constructor
+    required this.orderId,
+    this.reviewStatus, // Add this line
   });
 }

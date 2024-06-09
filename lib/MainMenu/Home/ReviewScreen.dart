@@ -70,6 +70,21 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
     return result.docs.isNotEmpty;
   }
 
+  Future<String?> getReviewStatus(String userId, int orderId) async {
+    final result = await FirebaseFirestore.instance
+        .collection('Reviews')
+        .doc(userId)
+        .collection('Submissions')
+        .where('orderId', isEqualTo: orderId)
+        .get();
+
+    if (result.docs.isNotEmpty) {
+      return result.docs.first['ReviewStatus'] as String?;
+    } else {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
@@ -154,20 +169,20 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
           : TabBarView(
         controller: _tabController,
         children: [
-          buildAppList(allApps, theme),
+          buildAppList(allApps, theme, false),
           isReviewedLoading
               ? Center(
             child: CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(isDarkTheme ? Colors.white : Colors.black),
             ),
           )
-              : buildAppList(reviewedApps, theme),
+              : buildAppList(reviewedApps, theme, true),
         ],
       ),
     );
   }
 
-  Widget buildAppList(List<AppInfo> apps, ThemeData theme) {
+  Widget buildAppList(List<AppInfo> apps, ThemeData theme, bool isReviewedTab) {
     if (apps.isEmpty) {
       return Center(child: Text('No data found', style: theme.textTheme.bodyLarge));
     }
@@ -176,38 +191,46 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
       itemCount: apps.length,
       itemBuilder: (context, index) {
         final app = apps[index];
-        return GameTile(
-          game: Game(
-            name: app.appTitle,
-            imagePath: app.iconUrl,
-            description: '',
-            appURL: app.appURL,
-            orderId: app.orderId,
-          ),
-          onTap: () {
-            if (_tabController.index == 1) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => InfoReview(orderId: app.orderId.toString()),
-                ),
-              );
-            } else {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AppPage(
-                    game: Game(
-                      name: app.appTitle,
-                      imagePath: app.iconUrl,
-                      description: 'Please Download The App, Give 5 Star Rating, Write A Good Review, Submit the review And get 500 Coins As Rewards',
-                      appURL: app.appURL,
-                      orderId: app.orderId,
+        return FutureBuilder<String?>(
+          future: isReviewedTab ? getReviewStatus(FirebaseAuth.instance.currentUser!.uid, app.orderId) : Future.value(null),
+          builder: (context, snapshot) {
+            String? reviewStatus = snapshot.data;
+
+            return GameTile(
+              game: Game(
+                name: app.appTitle,
+                imagePath: app.iconUrl,
+                description: '',
+                appURL: app.appURL,
+                orderId: app.orderId,
+                reviewStatus: reviewStatus,
+              ),
+              onTap: () {
+                if (isReviewedTab) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => InfoReview(orderId: app.orderId.toString()),
                     ),
-                  ),
-                ),
-              );
-            }
+                  );
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AppPage(
+                        game: Game(
+                          name: app.appTitle,
+                          imagePath: app.iconUrl,
+                          description: 'Please Download The App, Give 5 Star Rating, Write A Good Review, Submit the review And get 500 Coins As Rewards',
+                          appURL: app.appURL,
+                          orderId: app.orderId,
+                        ),
+                      ),
+                    ),
+                  );
+                }
+              },
+            );
           },
         );
       },
@@ -224,6 +247,33 @@ class GameTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Provider.of<ThemeProvider>(context).getTheme();
+
+    Color getStatusColor(String status) {
+      switch (status.toLowerCase()) {
+        case 'approved':
+          return Colors.green;
+        case 'rejected':
+          return Colors.red;
+        case 'in review':
+          return Colors.orangeAccent;
+        default:
+          return Colors.grey;
+      }
+    }
+
+    Color getBorderColor(String status) {
+      switch (status.toLowerCase()) {
+        case 'approved':
+          return Colors.green;
+        case 'rejected':
+          return Colors.red;
+        case 'in review':
+          return Colors.orangeAccent; // Use yellow color for "in review" status
+        default:
+          return Colors.grey;
+      }
+    }
+
     return Container(
       margin: EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
@@ -249,11 +299,22 @@ class GameTile extends StatelessWidget {
           game.name,
           style: theme.textTheme.bodyLarge,
         ),
-        trailing: Icon(Icons.arrow_forward_ios, color: theme.iconTheme.color),
+        trailing: game.reviewStatus != null
+            ? Container(
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: getStatusColor(game.reviewStatus!),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: getBorderColor(game.reviewStatus!), width: 2), // Set border color based on status
+          ),
+          child: Text(
+            game.reviewStatus!,
+            style: TextStyle(color: Colors.white),
+          ),
+        )
+            : Icon(Icons.arrow_forward_ios, color: theme.iconTheme.color),
         onTap: onTap,
       ),
     );
   }
 }
-
-
