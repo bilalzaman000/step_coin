@@ -27,39 +27,47 @@ class InfoReview extends StatelessWidget {
           } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return Center(child: Text('No review found'));
           } else {
-            final data = snapshot.data!.docs.first.data() as Map<String, dynamic>;
+            final docSnapshot = snapshot.data!.docs.first;
+            final data = docSnapshot.data() as Map<String, dynamic>;
             final appName = data['appName'] ?? 'Unknown App';
             final imageUrl = data['appImageURL'] ?? '';
             final review = data['review'] ?? '';
             final status = data['ReviewStatus'] ?? 'In Review';
             final timestamp = (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
             final imageUrls = List<String>.from(data['images'] ?? []);
+            final isClaimed = data['claimed'] ?? false;
 
             Color borderColor;
             Color claimButtonColor;
-            Color coinTextColor;
+            String claimButtonText = 'Claim';
+            VoidCallback? onClaimPressed;
 
             switch (status) {
               case 'Approved':
                 borderColor = Colors.green;
-                claimButtonColor = Colors.yellow;
+                if (isClaimed) {
+                  claimButtonColor = Colors.grey;
+                  claimButtonText = 'Claimed';
+                  onClaimPressed = null;
+                } else {
+                  claimButtonColor = Colors.yellow;
+                  onClaimPressed = () => _claimReward(context, docSnapshot.id);
+                }
                 break;
               case 'Rejected':
                 borderColor = Colors.red;
                 claimButtonColor = Colors.grey;
+                onClaimPressed = null;
                 break;
               case 'In Review':
               default:
                 borderColor = Colors.orange;
                 claimButtonColor = Colors.grey;
+                onClaimPressed = null;
                 break;
             }
 
-            if (isDarkMode) {
-              coinTextColor = Colors.white;
-            } else {
-              coinTextColor = Colors.black;
-            }
+            Color coinTextColor = isDarkMode ? Colors.white : Colors.black;
 
             return Padding(
               padding: const EdgeInsets.all(16.0),
@@ -218,13 +226,13 @@ class InfoReview extends StatelessWidget {
                     SizedBox(height: 10),
                     Center(
                       child: ElevatedButton(
-                        onPressed: status == 'Approved' ? () => _claimReward(context) : null,
+                        onPressed: onClaimPressed,
                         style: ElevatedButton.styleFrom(
                           foregroundColor: Colors.black,
                           backgroundColor: claimButtonColor,
                           minimumSize: Size(MediaQuery.of(context).size.width * 0.8, 50),
                         ),
-                        child: Text('Claim'),
+                        child: Text(claimButtonText),
                       ),
                     ),
                   ],
@@ -261,9 +269,54 @@ class InfoReview extends StatelessWidget {
     }
   }
 
-  void _claimReward(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Congratulations! Reward claimed!')),
-    );
+  Future<void> _claimReward(BuildContext context, String reviewId) async {
+    try {
+      String uid = FirebaseAuth.instance.currentUser!.uid;
+      DocumentReference reviewRef = FirebaseFirestore.instance
+          .collection('Reviews')
+          .doc(uid)
+          .collection('Submissions')
+          .doc(reviewId);
+
+      DocumentReference userRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid);
+
+      // Check if the reward has already been claimed
+      DocumentSnapshot reviewSnapshot = await reviewRef.get();
+      if (reviewSnapshot.exists && (reviewSnapshot.get('claimed') ?? false) == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Reward already claimed')),
+        );
+        return;
+      }
+
+      // Update the review document to mark it as claimed
+      await reviewRef.update({'claimed': true});
+
+      // Increment the user's coins and redeemed coins
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        DocumentSnapshot userSnapshot = await transaction.get(userRef);
+        if (userSnapshot.exists) {
+           int currentCoins = userSnapshot.get('Coins') ?? 0;
+          int currentRedeemedCoins = userSnapshot.get('Redeemed_Coins') ?? 0;
+
+          transaction.update(userRef, {
+            'Coins': currentCoins + 500,
+            'Redeemed_Coins': currentRedeemedCoins + 500,
+          });
+        }
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Congratulations! Reward claimed!')),
+      );
+    } catch (e) {
+      print('Error claiming reward: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error claiming reward')),
+      );
+    }
   }
 }
+

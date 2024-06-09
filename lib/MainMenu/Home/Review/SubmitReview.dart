@@ -6,6 +6,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
+import '../../../MainMenu.dart';
+
 class SubmitReviewScreen extends StatefulWidget {
   final int orderId;
   final String appName;
@@ -34,6 +36,7 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
+    final size = MediaQuery.of(context).size;
 
     return Scaffold(
       appBar: AppBar(
@@ -49,93 +52,96 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
           style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
         ),
       ),
-      body: Container(
-        color: isDarkMode ? Colors.black : Colors.white,
-        padding: EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: _reviewController,
-              style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
-              maxLines: 6,
-              decoration: InputDecoration(
-                labelText: 'Write Same Review You Submitted',
-                labelStyle: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
-                border: OutlineInputBorder(
-                  borderSide: BorderSide(color: isDarkMode ? Colors.white : Colors.black),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: isDarkMode ? Colors.white : Colors.black),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: isDarkMode ? Colors.white : Colors.black),
+      body: SingleChildScrollView(
+        child: Container(
+          color: isDarkMode ? Colors.black : Colors.white,
+          padding: EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: _reviewController,
+                style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
+                maxLines: 6,
+                decoration: InputDecoration(
+                  labelText: 'Write Same Review You Submitted',
+                  labelStyle: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide(color: isDarkMode ? Colors.white : Colors.black),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: isDarkMode ? Colors.white : Colors.black),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: isDarkMode ? Colors.white : Colors.black),
+                  ),
                 ),
               ),
-            ),
-            SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(3, (index) {
-                return GestureDetector(
-                  onTap: () async {
-                    File? image = await _pickImage();
-                    if (image != null) {
-                      setState(() {
-                        _pickedImages[index] = image;
-                        _uploadProgress[index] = 0;
-                      });
-                    }
-                  },
-                  child: Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: isDarkMode ? Colors.black : Colors.white,
-                      border: Border.all(color: isDarkMode ? Colors.white : Colors.black),
-                    ),
-                    child: _pickedImages[index] != null
-                        ? Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.file(_pickedImages[index]!, fit: BoxFit.cover),
-                        if (_isUploading)
-                          Center(
-                            child: CircularProgressIndicator(
-                              value: _uploadProgress[index] / 100,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                  isDarkMode ? Colors.white : Colors.black),
+              SizedBox(height: 20),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: List.generate(3, (index) {
+                  return GestureDetector(
+                    onTap: () async {
+                      File? image = await _pickImage();
+                      if (image != null) {
+                        setState(() {
+                          _pickedImages[index] = image;
+                          _uploadProgress[index] = 0;
+                        });
+                      }
+                    },
+                    child: Container(
+                      width: (size.width - 60) / 3,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: isDarkMode ? Colors.black : Colors.white,
+                        border: Border.all(color: isDarkMode ? Colors.white : Colors.black),
+                      ),
+                      child: _pickedImages[index] != null
+                          ? Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.file(_pickedImages[index]!, fit: BoxFit.cover),
+                          if (_isUploading)
+                            Center(
+                              child: CircularProgressIndicator(
+                                value: _uploadProgress[index] / 100,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    isDarkMode ? Colors.white : Colors.black),
+                              ),
                             ),
-                          ),
-                      ],
-                    )
-                        : Center(
-                      child: Icon(
-                        Icons.add,
-                        color: isDarkMode ? Colors.white : Colors.black,
+                        ],
+                      )
+                          : Center(
+                        child: Icon(
+                          Icons.add,
+                          color: isDarkMode ? Colors.white : Colors.black,
+                        ),
                       ),
                     ),
+                  );
+                }),
+              ),
+              SizedBox(height: 20),
+              Center(
+                child: ElevatedButton(
+                  onPressed: _isUploading ? null : _submitReview,
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: isDarkMode ? Colors.white : Colors.black,
+                    backgroundColor: isDarkMode ? Colors.white : Colors.black,
                   ),
-                );
-              }),
-            ),
-            SizedBox(height: 20),
-            Center(
-              child: ElevatedButton(
-                onPressed: _isUploading ? null : _submitReview,
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: isDarkMode ? Colors.white : Colors.black,
-                  backgroundColor: isDarkMode ? Colors.white : Colors.black,
-                ),
-                child: _isUploading
-                    ? CircularProgressIndicator()
-                    : Text(
-                  'Submit Review',
-                  style: TextStyle(color: isDarkMode ? Colors.black : Colors.white),
+                  child: _isUploading
+                      ? CircularProgressIndicator()
+                      : Text(
+                    'Submit Review',
+                    style: TextStyle(color: isDarkMode ? Colors.black : Colors.white),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -153,6 +159,12 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
     if (_reviewController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Please write a review')),
+      );
+      return;
+    }
+    if (_pickedImages.every((image) => image == null)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please add at least one image')),
       );
       return;
     }
@@ -175,12 +187,20 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
         'appName': widget.appName,
         'appURL': widget.appURL,
         'appImageURL': widget.appImageURL,
+        'claimed': false,
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Review submitted successfully')),
+        customSubmissionSnackbar(
+          message: 'Submission Submitted\nWe will review your proof and you will receive coins shortly.',
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => MainMenu()),
+            );
+          },
+        ),
       );
-      Navigator.pop(context);
     } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error submitting review: $error')),
@@ -214,5 +234,53 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
       }
     }
     return imageUrls;
+  }
+
+  SnackBar customSubmissionSnackbar({required String message, required VoidCallback onPressed}) {
+    return SnackBar(
+      content: Container(
+        padding: EdgeInsets.symmetric(vertical: 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(15.0),
+              child: Image.asset(
+                'assets/ExclaimationMark.png',
+                width: 50,
+                height: 50,
+              ),
+            ),
+            SizedBox(height: 10),
+            Text(
+              message,
+              style: TextStyle(color: Colors.white),
+            ),
+            SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: ElevatedButton(
+                onPressed: onPressed,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: BorderSide(color: Colors.white),
+                  ),
+                  minimumSize: Size(double.infinity, 36),
+                ),
+                child: Text(
+                  'Back to Home',
+                  style: TextStyle(color: Colors.black),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: Colors.grey[850],
+    );
   }
 }
