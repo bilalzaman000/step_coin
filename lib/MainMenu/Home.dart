@@ -1,9 +1,9 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:health/health.dart';
+import 'package:pedometer/pedometer.dart';
+import '../adManager.dart';
 import 'Home/ReviewScreen.dart';
-
 
 class HomePage extends StatefulWidget {
   @override
@@ -12,13 +12,13 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   int _coinValue = 0;
-  int _steps = 6000;
-  HealthFactory health = HealthFactory();
+  int _steps = 0;
   late AnimationController _animationController;
   late Animation<double> _stepsAnimation;
   late Animation<double> _coinsAnimation;
-  // New list to hold widget status
   List<Map<String, dynamic>> _widgetsStatus = [];
+  DateTime _lastResetDate = DateTime.now();
+  int _lastSteps = 0;
 
   @override
   void initState() {
@@ -28,12 +28,11 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       vsync: this,
     );
 
-    // Initialize animations with default values
     _stepsAnimation = Tween<double>(begin: 0, end: _steps.toDouble()).animate(_animationController);
     _coinsAnimation = Tween<double>(begin: 0, end: (_steps / 3).toDouble()).animate(_animationController);
     _fetchCoinValue();
-    _fetchSteps();
-    _fetchWidgetStatus(); // Fetch widget status from Firestore
+    _initPedometer();
+    _fetchWidgetStatus();
     _animationController.forward();
   }
 
@@ -46,43 +45,17 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   Future<void> _fetchCoinValue() async {
     String? uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
-      DocumentSnapshot snapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .get();
+      DocumentSnapshot snapshot = await FirebaseFirestore.instance.collection('users').doc(uid).get();
       if (snapshot.exists) {
         setState(() {
           _coinValue = snapshot['Coins'] ?? 0;
+          _lastResetDate = (snapshot['LastResetDate'] as Timestamp).toDate();
+          _steps = snapshot['CurrentDaySteps'] ?? 0;
         });
+        _checkResetSteps();
       } else {
         print('Document does not exist');
       }
-    }
-  }
-
-  Future<void> _fetchSteps() async {
-    try {
-      bool isAuthorized = await health.requestAuthorization([HealthDataType.STEPS]);
-      if (isAuthorized) {
-        print('Authorization granted');
-        List<HealthDataPoint> healthData = await health.getHealthDataFromTypes(
-          DateTime.now().subtract(Duration(days: 1)),
-          DateTime.now(),
-          [HealthDataType.STEPS],
-        );
-        int totalSteps = healthData.fold(0, (sum, data) => sum + (data.value as int));
-        print('Total steps fetched: $totalSteps');
-        setState(() {
-          _steps = totalSteps;
-          _stepsAnimation = Tween<double>(begin: 0, end: _steps.toDouble()).animate(_animationController);
-          _coinsAnimation = Tween<double>(begin: 0, end: (_steps / 3).toDouble()).animate(_animationController);
-          _animationController.forward(from: 0);
-        });
-      } else {
-        print('Authorization not granted');
-      }
-    } catch (e) {
-      print('Error fetching steps: $e');
     }
   }
 
@@ -96,6 +69,80 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     } catch (e) {
       print('Error fetching widget status: $e');
     }
+  }
+
+  void _initPedometer() {
+    Pedometer pedometer = Pedometer();
+    Pedometer.stepCountStream.listen(_onStepCount, onError: _onStepCountError);
+  }
+
+  void _onStepCount(StepCount event) async {
+    int newSteps = event.steps;
+    if (_isValidStepCount(newSteps)) {
+      setState(() {
+        _steps = newSteps;
+        _stepsAnimation = Tween<double>(begin: 0, end: _steps.toDouble()).animate(_animationController);
+        _coinsAnimation = Tween<double>(begin: 0, end: (_steps / 3).toDouble()).animate(_animationController);
+        _animationController.forward(from: 0);
+      });
+
+      _checkResetSteps();
+
+      DateTime now = DateTime.now();
+      String? uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        DocumentReference userDoc = FirebaseFirestore.instance.collection('users').doc(uid);
+        Map<String, dynamic> userData = {
+          'CurrentDaySteps': _steps,
+          'CoinsEarnedToday': (_steps / 3).toInt(),
+          'LastResetDate': now,
+        };
+        await userDoc.set(userData, SetOptions(merge: true));
+      }
+    } else {
+      print('Invalid step count detected: $newSteps');
+    }
+  }
+
+  bool _isValidStepCount(int newSteps) {
+    int stepIncrease = newSteps - _lastSteps;
+    bool isValid = stepIncrease >= 0 && stepIncrease <= 2000; // Adjust threshold as needed
+    _lastSteps = newSteps;
+    return isValid;
+  }
+
+
+
+
+  void _checkResetSteps() async {
+    DateTime now = DateTime.now();
+    if (now.difference(_lastResetDate).inDays >= 1) {
+      String? uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        DocumentReference userDoc = FirebaseFirestore.instance.collection('users').doc(uid);
+        DocumentSnapshot snapshot = await userDoc.get();
+        if (snapshot.exists) {
+          List<dynamic> dailySteps = snapshot['DailySteps'] ?? [];
+          dailySteps.add({
+            'date': _lastResetDate,
+            'steps': _steps,
+          });
+          await userDoc.update({
+            'DailySteps': dailySteps,
+            'CurrentDaySteps': 0,
+            'LastResetDate': now,
+          });
+          setState(() {
+            _steps = 0;
+            _lastResetDate = now;
+          });
+        }
+      }
+    }
+  }
+
+  void _onStepCountError(error) {
+    print('Step Count Error: $error');
   }
 
   void _showComingSoonDialog() {
@@ -190,7 +237,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 children: _widgetsStatus.where((widget) => widget['enabled'] == true).map((widget) {
                   switch (widget['name']) {
                     case 'Watch an ad':
-                      return _buildListItem('Watch an ad', 77, 'assets/Home/Video.png', context, WatchAdScreen());
+                      return _buildListItem('Watch an ad', 77, 'assets/Home/Video.png', context, null);
                     case 'Give a Review':
                       return _buildListItem('Give a Review', 500, 'assets/Home/Star.png', context, ReviewScreen());
                     case 'Submit A Survey':
@@ -215,7 +262,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       margin: EdgeInsets.symmetric(vertical: 8.0),
       child: ListTile(
         onTap: () {
-          if (showComingSoon) {
+          if (title == 'Watch an ad') {
+            AdManager().showRewardedAd(context);
+          } else if (showComingSoon) {
             _showComingSoonDialog();
           } else if (nextScreen != null) {
             Navigator.push(
@@ -243,20 +292,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class WatchAdScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Watch an Ad'),
-      ),
-      body: Center(
-        child: Text('Watch an Ad screen content.'),
       ),
     );
   }

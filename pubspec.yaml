@@ -44,6 +44,10 @@ dependencies:
   firebase_storage: ^12.0.0
   health: ^4.1.1
   provider: ^6.1.2
+  pedometer: ^4.0.1
+  permission_handler: ^11.3.1
+  email_validator: ^2.1.17
+
 
 
 
@@ -83,6 +87,7 @@ flutter:
     - assets/Games/
     - assets/Home/
     - assets/Account/
+    - assets/Redemptions/
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

@@ -261,6 +261,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
                           'Review_Coins':0,
                           'Ad_Coins':0,
                           'Redeemed_Coins':0,
+                          'Cashed_Coins':0,
                         });
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -396,6 +397,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
             'Review_Coins':0,
             'Ad_Coins':0,
             'Redeemed_Coins':0,
+            'Cashed_Coins':0,
           });
           Navigator.pushReplacement(
             context,

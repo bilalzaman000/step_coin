@@ -242,7 +242,7 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
 
   Widget buildAppList(List<AppInfo> apps, ThemeData theme, bool isReviewedTab) {
     if (apps.isEmpty) {
-      return Center(child: Text('No data found', style: theme.textTheme.bodyLarge));
+      return Center(child: Text('No Apps Found', style: theme.textTheme.bodyLarge));
     }
 
     return ListView.builder(
