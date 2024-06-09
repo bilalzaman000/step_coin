@@ -5,7 +5,7 @@ import 'AppClass.dart';
 import 'Review/AppDetails.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'Review/InfoReview.dart'; // Import the InfoReview.dart file
+import 'Review/InfoReview.dart';
 import '../../Theme/ThemeProvider.dart';
 
 class ReviewScreen extends StatefulWidget {
@@ -18,33 +18,52 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
   List<AppInfo> allApps = [];
   List<AppInfo> reviewedApps = [];
   bool isLoading = true;
-  bool isReviewedLoading = true; // Change to true initially
+  bool isReviewedLoading = true;
+  int totalRedeemedCoins = 0;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     fetchApps().then((apps) {
-      setState(() {
-        allApps = apps;
-        isLoading = false;
-      });
-      filterReviewedApps();
-      showSortingPopup(); // Show the popup after loading is complete
+      if (mounted) {
+        setState(() {
+          allApps = apps;
+          isLoading = false;
+        });
+        filterReviewedApps();
+        showSortingPopup();
+      }
     });
     FirebaseFirestore.instance.collection('Reviews').snapshots().listen((snapshot) {
-      filterReviewedApps();
+      if (mounted) {
+        filterReviewedApps();
+      }
+    });
+
+    _tabController.addListener(() {
+      if (_tabController.index == 1) {
+        fetchRedeemedCoins();
+      }
+      if (_tabController.index == 0) {
+        if (mounted) {
+          setState(() {});
+        }
+      }
     });
   }
 
   Future<void> filterReviewedApps() async {
-    setState(() {
-      isReviewedLoading = true; // Set loading to true initially
-    });
+    if (mounted) {
+      setState(() {
+        isReviewedLoading = true;
+      });
+    }
 
     String userId = FirebaseAuth.instance.currentUser!.uid;
     List<AppInfo> reviewed = [];
     List<AppInfo> unreviewed = [];
+
     for (var app in allApps) {
       bool isReviewed = await hasReviewed(userId, app.orderId);
       if (isReviewed) {
@@ -53,31 +72,49 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
         unreviewed.add(app);
       }
     }
-    setState(() {
-      reviewedApps = reviewed;
-      allApps = unreviewed; // Update allApps to only include unreviewed apps
-      isReviewedLoading = false; // Set loading to false after filtering
-    });
+
+    if (mounted) {
+      setState(() {
+        reviewedApps = reviewed;
+        allApps = unreviewed;
+        isReviewedLoading = false;
+      });
+    }
+  }
+
+  Future<void> fetchRedeemedCoins() async {
+    String userId = FirebaseAuth.instance.currentUser!.uid;
+
+    final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    if (userDoc.exists && userDoc.data() != null) {
+      if (mounted) {
+        setState(() {
+          totalRedeemedCoins = userDoc.data()!['Redeemed_Coins'] ?? 0;
+        });
+      }
+    }
   }
 
   Future<void> showSortingPopup() async {
-    // Show the popup
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Please Wait'),
-          content: Text('Data is being sorted...'),
+        return WillPopScope(
+          onWillPop: () async => false,
+          child: AlertDialog(
+            title: Text('Please Wait'),
+            content: Text('Data is being sorted...'),
+          ),
         );
       },
     );
 
-    // Wait for 3 seconds
     await Future.delayed(Duration(seconds: 5));
 
-    // Dismiss the popup
-    Navigator.of(context).pop();
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
   }
 
   Future<bool> hasReviewed(String userId, int orderId) async {
@@ -138,7 +175,7 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
                   Image.asset('assets/Coin.png', width: 50, height: 50),
                   SizedBox(width: 8),
                   Text(
-                    '500',
+                    _tabController.index == 0 ? '500' : '$totalRedeemedCoins',
                     style: TextStyle(
                       color: isDarkTheme ? Colors.white : Colors.black,
                       fontSize: 50,
@@ -156,7 +193,7 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
                         ),
                       ),
                       Text(
-                        'per Review',
+                        _tabController.index == 0 ? 'per Review' : 'you earned',
                         style: TextStyle(
                           color: isDarkTheme ? Colors.grey : Colors.black54,
                           fontSize: 16,
@@ -171,7 +208,7 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
                 controller: _tabController,
                 labelColor: isDarkTheme ? Colors.white : Colors.black,
                 unselectedLabelColor: isDarkTheme ? Colors.white70 : Colors.black54,
-                indicatorColor: isDarkTheme ? Colors.white : Colors.black, // Set indicator color based on theme
+                indicatorColor: isDarkTheme ? Colors.white : Colors.black,
                 tabs: [
                   Tab(text: 'All Apps'),
                   Tab(text: 'Reviewed Apps'),
@@ -256,6 +293,12 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
         );
       },
     );
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 }
 
