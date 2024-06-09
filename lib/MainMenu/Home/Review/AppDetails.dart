@@ -30,7 +30,7 @@ class AppPage extends StatelessWidget {
           },
         ),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -41,9 +41,17 @@ class AppPage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 child: Image.network(
                   game.imagePath,
-                  width: double.infinity,
+                  width: MediaQuery.of(context).size.width * 0.9,
+                  height: 200,
                   fit: BoxFit.cover,
                 ),
+              ),
+            ),
+            SizedBox(height: 16),
+            Center(
+              child: Text(
+                game.name,
+                style: TextStyle(color: theme.textTheme.headlineSmall?.color, fontSize: 24),
               ),
             ),
             SizedBox(height: 16),
@@ -88,16 +96,6 @@ class AppPage extends StatelessWidget {
               ),
             ),
             SizedBox(height: 16),
-            Text(
-              game.name,
-              style: TextStyle(color: theme.textTheme.headlineSmall?.color, fontSize: 24),
-            ),
-            SizedBox(height: 8),
-            Text(
-              game.description,
-              style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontSize: 16),
-            ),
-            SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
@@ -114,7 +112,8 @@ class AppPage extends StatelessWidget {
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      foregroundColor: isDarkMode ? Colors.black : Colors.white, backgroundColor: isDarkMode ? Colors.white : Colors.black,
+                      foregroundColor: isDarkMode ? Colors.black : Colors.white,
+                      backgroundColor: isDarkMode ? Colors.white : Colors.black,
                     ),
                     child: Text('Submit Proof'),
                   ),
@@ -126,10 +125,66 @@ class AppPage extends StatelessWidget {
                       launchURL(game.appURL);
                     },
                     style: ElevatedButton.styleFrom(
-                      foregroundColor: isDarkMode ? Colors.white : Colors.black, backgroundColor: isDarkMode ? Colors.black : Colors.white,
+                      foregroundColor: isDarkMode ? Colors.white : Colors.black,
+                      backgroundColor: isDarkMode ? Colors.black : Colors.white,
                       side: BorderSide(color: isDarkMode ? Colors.white : Colors.black),
                     ),
                     child: Text('Download App'),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 12),
+            Center(
+              child: Align(
+                alignment: Alignment.center,
+                child: Text(
+                  game.description,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontSize: 16),
+                ),
+              ),
+            ),
+            SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // Action for viewing sample screenshots
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('View Sample Screenshot', style: TextStyle(color: Colors.white)),
+                        Icon(Icons.arrow_forward, color: Colors.white),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // Action for viewing tutorial
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('View Tutorial', style: TextStyle(color: Colors.white)),
+                        Icon(Icons.arrow_forward, color: Colors.white),
+                      ],
+                    ),
                   ),
                 ),
               ],

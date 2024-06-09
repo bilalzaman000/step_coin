@@ -69,8 +69,8 @@ class InfoReview extends StatelessWidget {
                   children: [
                     Center(
                       child: Container(
-                        width: MediaQuery.of(context).size.width * 0.6,
-                        height: 200,
+                        width: MediaQuery.of(context).size.width * 0.9,
+                        height: 150,
                         child: imageUrl.isNotEmpty
                             ? Image.network(
                           imageUrl,
@@ -81,6 +81,13 @@ class InfoReview extends StatelessWidget {
                           color: Colors.grey,
                           child: Icon(Icons.image_not_supported),
                         ),
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    Center(
+                      child: Text(
+                        appName,
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                     ),
                     SizedBox(height: 10),
@@ -117,14 +124,6 @@ class InfoReview extends StatelessWidget {
                           ],
                         ),
                       ],
-                    ),
-                    SizedBox(height: 10),
-
-                    Center(
-                      child: Text(
-                        appName,
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
                     ),
 
                     SizedBox(height: 20),
@@ -171,25 +170,31 @@ class InfoReview extends StatelessWidget {
                           },
                           child: Stack(
                             children: [
-                              Image.network(
-                                url,
-                                width: 100,
-                                height: 100,
-                                fit: BoxFit.cover,
-                                loadingBuilder: (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return Container(
-                                    width: 100,
-                                    height: 100,
-                                    child: Center(
-                                      child: CircularProgressIndicator(
-                                        value: loadingProgress.expectedTotalBytes != null
-                                            ? loadingProgress.cumulativeBytesLoaded / (loadingProgress.expectedTotalBytes!)
-                                            : null,
+                              Container(
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: borderColor, width: 2.0),
+                                  borderRadius: BorderRadius.circular(8.0),
+                                ),
+                                child: Image.network(
+                                  url,
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Container(
+                                      width: 100,
+                                      height: 100,
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                          value: loadingProgress.expectedTotalBytes != null
+                                              ? loadingProgress.cumulativeBytesLoaded / (loadingProgress.expectedTotalBytes!)
+                                              : null,
+                                        ),
                                       ),
-                                    ),
-                                  );
-                                },
+                                    );
+                                  },
+                                ),
                               ),
                             ],
                           ),
@@ -217,7 +222,7 @@ class InfoReview extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                           foregroundColor: Colors.black,
                           backgroundColor: claimButtonColor,
-                          minimumSize: Size(MediaQuery.of(context).size.width * 0.7, 45),
+                          minimumSize: Size(MediaQuery.of(context).size.width * 0.8, 50),
                         ),
                         child: Text('Claim'),
                       ),
@@ -255,8 +260,6 @@ class InfoReview extends StatelessWidget {
       throw e;
     }
   }
-
-
 
   void _claimReward(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(

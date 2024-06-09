@@ -2,10 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:health/health.dart';
-import 'package:provider/provider.dart';
-import 'dart:math';
-
-import '../Theme/ThemeProvider.dart';
 import 'Home/ReviewScreen.dart';
 
 
@@ -21,6 +17,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   late AnimationController _animationController;
   late Animation<double> _stepsAnimation;
   late Animation<double> _coinsAnimation;
+  // New list to hold widget status
+  List<Map<String, dynamic>> _widgetsStatus = [];
 
   @override
   void initState() {
@@ -33,9 +31,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     // Initialize animations with default values
     _stepsAnimation = Tween<double>(begin: 0, end: _steps.toDouble()).animate(_animationController);
     _coinsAnimation = Tween<double>(begin: 0, end: (_steps / 3).toDouble()).animate(_animationController);
-
     _fetchCoinValue();
     _fetchSteps();
+    _fetchWidgetStatus(); // Fetch widget status from Firestore
     _animationController.forward();
   }
 
@@ -88,6 +86,18 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     }
   }
 
+  Future<void> _fetchWidgetStatus() async {
+    try {
+      QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('Widgets').get();
+      List<Map<String, dynamic>> widgetsStatus = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+      setState(() {
+        _widgetsStatus = widgetsStatus;
+      });
+    } catch (e) {
+      print('Error fetching widget status: $e');
+    }
+  }
+
   void _showComingSoonDialog() {
     showDialog(
       context: context,
@@ -115,25 +125,24 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     Color appBarColor = theme.brightness == Brightness.light ? Colors.white : Colors.black;
     return Scaffold(
       backgroundColor: appBarColor,
-       appBar: AppBar(
-    backgroundColor: theme.brightness == Brightness.light ? Colors.white : Colors.black,
-      title: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text('   StepCoins', style: TextStyle(color: theme.brightness == Brightness.light ? Colors.black : Colors.white)),
-          Row(
-            children: [
-              Image.asset('assets/Coin.png', height: 24),
-              SizedBox(width: 8),
-              Text('$_coinValue', style: TextStyle(fontSize: 24, color: theme.brightness == Brightness.light ? Colors.black : Colors.white)),
-              SizedBox(width: 8),
-            ],
-          ),
-        ],
+      appBar: AppBar(
+        backgroundColor: theme.brightness == Brightness.light ? Colors.white : Colors.black,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('   StepCoins', style: TextStyle(color: theme.brightness == Brightness.light ? Colors.black : Colors.white)),
+            Row(
+              children: [
+                Image.asset('assets/Coin.png', height: 24),
+                SizedBox(width: 8),
+                Text('$_coinValue', style: TextStyle(fontSize: 24, color: theme.brightness == Brightness.light ? Colors.black : Colors.white)),
+                SizedBox(width: 8),
+              ],
+            ),
+          ],
+        ),
       ),
-    ),
-
-    body: Padding(
+      body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,12 +187,20 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             SizedBox(height: 10),
             Expanded(
               child: ListView(
-                children: [
-                  _buildListItem('Watch an ad', 77, 'assets/Home/Video.png', context, WatchAdScreen()),
-                  _buildListItem('Give a Review', 500, 'assets/Home/Star.png', context, ReviewScreen()),
-                  _buildListItem('Submit A Survey', 77, 'assets/Home/Pen.png', context, null, true),
-                  _buildListItem('Play A Game', 77, 'assets/Home/Cube.png', context, null, true),
-                ],
+                children: _widgetsStatus.where((widget) => widget['enabled'] == true).map((widget) {
+                  switch (widget['name']) {
+                    case 'Watch an ad':
+                      return _buildListItem('Watch an ad', 77, 'assets/Home/Video.png', context, WatchAdScreen());
+                    case 'Give a Review':
+                      return _buildListItem('Give a Review', 500, 'assets/Home/Star.png', context, ReviewScreen());
+                    case 'Submit A Survey':
+                      return _buildListItem('Submit A Survey', 77, 'assets/Home/Pen.png', context, null, true);
+                    case 'Play A Game':
+                      return _buildListItem('Play A Game', 77, 'assets/Home/Cube.png', context, null, true);
+                    default:
+                      return Container();
+                  }
+                }).toList(),
               ),
             ),
           ],
@@ -240,34 +257,6 @@ class WatchAdScreen extends StatelessWidget {
       ),
       body: Center(
         child: Text('Watch an Ad screen content.'),
-      ),
-    );
-  }
-}
-
-class SubmitSurveyScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Submit a Survey'),
-      ),
-      body: Center(
-        child: Text('Submit a Survey screen content.'),
-      ),
-    );
-  }
-}
-
-class PlayGameScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Play a Game'),
-      ),
-      body: Center(
-        child: Text('Play a Game screen content.'),
       ),
     );
   }

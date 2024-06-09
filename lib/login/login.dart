@@ -26,7 +26,6 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final theme = Theme.of(context);
-
     // Define colors based on the current theme
     Color appBarColor = theme.brightness == Brightness.light ? Colors.white : Colors.black;
     Color buttonBackgroundColor = Colors.black;
@@ -312,6 +311,9 @@ class _LoginScreenState extends State<LoginScreen> {
           await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
             'Coins': 0,
             'Name': userName,
+            'Review_Coins':0,
+            'Ad_Coins':0,
+            'Redeemed_Coins':0,
           });
           Navigator.pushReplacement(
             context,

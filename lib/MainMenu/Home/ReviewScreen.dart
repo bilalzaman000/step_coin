@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../Api/ReviewApi/FetchData.dart';
 import 'AppClass.dart';
-import 'Review/AppPage.dart';
+import 'Review/AppDetails.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'Review/InfoReview.dart'; // Import the InfoReview.dart file
@@ -200,7 +200,7 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
                     game: Game(
                       name: app.appTitle,
                       imagePath: app.iconUrl,
-                      description: 'Please Download The App, Give 5 Star Rating, Write A Good Review, Submit the review And get Amazing Rewards',
+                      description: 'Please Download The App, Give 5 Star Rating, Write A Good Review, Submit the review And get 500 Coins As Rewards',
                       appURL: app.appURL,
                       orderId: app.orderId,
                     ),
