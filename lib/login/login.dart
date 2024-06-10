@@ -303,18 +303,24 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         final UserCredential userCredential =
         await _auth.signInWithCredential(credential);
+
         // Check if user is new or existing and navigate accordingly
         if (userCredential.additionalUserInfo!.isNewUser) {
           // Handle new user
           // Add user data to Firestore
           final String? userName = googleSignInAccount.displayName;
+          final String? email = googleSignInAccount.email;
           await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
             'Coins': 0,
             'Name': userName,
-            'Review_Coins':0,
-            'Ad_Coins':0,
-            'Redeemed_Coins':0,
-            'Cashed_Coins':0,
+            'Email': email, // Store the user's email
+            'Review_Coins': 0,
+            'Ad_Coins': 0,
+            'Redeemed_Coins': 0,
+            'Cashed_Coins': 0,
+            'DailySteps': [], // Initialize as an empty list
+            'CurrentDaySteps': 0, // Initialize current day's steps as 0
+            'LastResetDate': FieldValue.serverTimestamp(),
           });
           Navigator.pushReplacement(
             context,
@@ -337,4 +343,5 @@ class _LoginScreenState extends State<LoginScreen> {
       });
     }
   }
+
 }

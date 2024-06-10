@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:pedometer/pedometer.dart';
 import '../adManager.dart';
 import 'Home/ReviewScreen.dart';
+import 'Home/StepsHistory.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -85,7 +86,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         _coinsAnimation = Tween<double>(begin: 0, end: (_steps / 3).toDouble()).animate(_animationController);
         _animationController.forward(from: 0);
       });
-      _checkResetSteps();
       DateTime now = DateTime.now();
       String? uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid != null) {
@@ -96,6 +96,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           'LastResetDate': now,
         };
         await userDoc.set(userData, SetOptions(merge: true));
+        _checkResetSteps(); // Ensure this is checked after updating the current day's steps
       }
     } else {
       print('Invalid step count detected: $newSteps');
@@ -109,9 +110,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     return isValid;
   }
 
-
-
-
   void _checkResetSteps() async {
     DateTime now = DateTime.now();
     if (now.difference(_lastResetDate).inDays >= 1) {
@@ -124,15 +122,18 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           dailySteps.add({
             'date': _lastResetDate,
             'steps': _steps,
+            'coins': (_steps / 3).toInt(),
           });
           await userDoc.update({
             'DailySteps': dailySteps,
             'CurrentDaySteps': 0,
             'LastResetDate': now,
+            'Coins': FieldValue.increment((_steps / 3).toInt()),
           });
           setState(() {
             _steps = 0;
             _lastResetDate = now;
+            _coinValue += (_steps / 3).toInt();
           });
         }
       }
@@ -192,39 +193,47 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(30),
-              ),
-              padding: EdgeInsets.all(2.0),
-              height: MediaQuery.of(context).size.height * 0.25,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text('Total Steps', style: TextStyle(fontSize: 18, color: theme.colorScheme.onSurface)),
-                  SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Image.asset('assets/Home/Steps.png', height: 50),
-                      SizedBox(width: 8),
-                      Text('${_steps.toString()}', style: TextStyle(fontSize: 50, color: theme.colorScheme.onSurface)),
-                    ],
-                  ),
-                  SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Image.asset('assets/Coin.png', height: 24),
-                      SizedBox(width: 8),
-                      Text('${(_steps / 3).toInt()}', style: TextStyle(fontSize: 18, color: theme.colorScheme.onSurface)),
-                      SizedBox(width: 6),
-                      Text('Earned Today', style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurface)),
-                    ],
-                  ),
-                ],
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => StepsHistory()),
+                );
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                padding: EdgeInsets.all(2.0),
+                height: MediaQuery.of(context).size.height * 0.25,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text('Total Steps', style: TextStyle(fontSize: 18, color: theme.colorScheme.onSurface)),
+                    SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset('assets/Home/Steps.png', height: 50),
+                        SizedBox(width: 8),
+                        Text('${_steps.toString()}', style: TextStyle(fontSize: 50, color: theme.colorScheme.onSurface)),
+                      ],
+                    ),
+                    SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset('assets/Coin.png', height: 24),
+                        SizedBox(width: 8),
+                        Text('${(_steps / 3).toInt()}', style: TextStyle(fontSize: 18, color: theme.colorScheme.onSurface)),
+                        SizedBox(width: 6),
+                        Text('Earned Today', style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurface)),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
             SizedBox(height: 20),
@@ -235,7 +244,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 children: _widgetsStatus.where((widget) => widget['enabled'] == true).map((widget) {
                   switch (widget['name']) {
                     case 'Watch an ad':
-                      return _buildListItem('Watch an ad', 77, 'assets/Home/Video.png', context, null);
+                      return _buildListItem('Watch an ad', 50, 'assets/Home/Video.png', context, null);
                     case 'Give a Review':
                       return _buildListItem('Give a Review', 500, 'assets/Home/Star.png', context, ReviewScreen());
                     case 'Submit A Survey':
