@@ -7,7 +7,7 @@ import 'package:step_coin/welcomepage.dart';
 import 'MainMenu.dart';
 import 'Theme/ThemeProvider.dart';
 import 'adManager.dart';
-import 'package:permission_handler/permission_handler.dart';
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

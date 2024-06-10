@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:sensors_plus/sensors_plus.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:background_fetch/background_fetch.dart';
 import '../Widgets/StepsCounter.dart';
 import '../adManager.dart';
 import 'Home/ReviewScreen.dart';
 import 'Home/StepsHistory.dart';
-
 
 class HomePage extends StatefulWidget {
   @override
@@ -40,6 +40,20 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     _initPedometer();
     _fetchWidgetStatus();
     _animationController.forward();
+
+    // Initialize Background Fetch
+    BackgroundFetch.configure(
+      BackgroundFetchConfig(
+        minimumFetchInterval: 15,
+        stopOnTerminate: false,
+        startOnBoot: true,
+      ),
+      _onBackgroundFetch,
+    ).then((int status) {
+      print('Background Fetch configured: $status');
+    }).catchError((e) {
+      print('Error configuring Background Fetch: $e');
+    });
   }
 
   @override
@@ -49,6 +63,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
   Future<void> _fetchCoinValue() async {
+    final prefs = await SharedPreferences.getInstance();
+    int localCoinValue = prefs.getInt('coinValue') ?? 0;
+
     String? uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
       DocumentSnapshot snapshot = await FirebaseFirestore.instance.collection('users').doc(uid).get();
@@ -63,6 +80,18 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         print('Document does not exist');
       }
     }
+
+    setState(() {
+      _coinValue = localCoinValue;
+    });
+  }
+
+  Future<void> _updateCoinValue(int newValue) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('coinValue', newValue);
+    setState(() {
+      _coinValue = newValue;
+    });
   }
 
   Future<void> _fetchWidgetStatus() async {
@@ -86,6 +115,26 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     });
   }
 
+  void _onBackgroundFetch(String taskId) async {
+    // Handle the background fetch event and update steps
+    _updateStepsInBackground();
+    BackgroundFetch.finish(taskId);
+  }
+
+  Future<void> _updateStepsInBackground() async {
+    // Logic to update steps in background
+    accelerometerEvents.listen((AccelerometerEvent event) {
+      _stepCounter.onAccelerometerEvent(event.x, event.y, event.z);
+      setState(() {
+        _steps = _stepCounter.steps;
+      });
+    });
+
+    // Save steps to local storage or Firebase if necessary
+    await _updateCoinValue(_coinValue); // Update the local coin value
+    _checkResetSteps(); // Check for step reset
+  }
+
   void _checkResetSteps() async {
     DateTime now = DateTime.now();
     if (now.difference(_lastResetDate).inDays >= 1) {
@@ -98,7 +147,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           dailySteps.add({
             'date': _lastResetDate,
             'steps': _steps,
-            'coins': (_steps / 3).toInt(),
+            'CoinsEarnedToday': (_steps / 3).toInt(),
           });
           await userDoc.update({
             'DailySteps': dailySteps,
@@ -111,6 +160,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             _lastResetDate = now;
             _coinValue += (_steps / 3).toInt();
           });
+          await _updateCoinValue(0); // Reset the local coin value
           _stepCounter.reset(); // Reset the step counter
         }
       }
@@ -213,62 +263,68 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             Text('More Ways to Earn Coins', style: TextStyle(color: theme.colorScheme.onBackground, fontSize: 18)),
             SizedBox(height: 10),
             Expanded(
-              child: ListView(
-                children: _widgetsStatus.where((widget) => widget['enabled'] == true).map((widget) {
-                  switch (widget['name']) {
-                    case 'Watch an ad':
-                      return _buildListItem('Watch an ad', 50, 'assets/Home/Video.png', context, null);
-                    case 'Give a Review':
-                      return _buildListItem('Give a Review', 500, 'assets/Home/Star.png', context, ReviewScreen());
-                    case 'Submit A Survey':
-                      return _buildListItem('Submit A Survey', 77, 'assets/Home/Pen.png', context, null, true);
-                    case 'Play A Game':
-                      return _buildListItem('Play A Game', 77, 'assets/Home/Cube.png', context, null, true);
-                    default:
-                      return Container();
+              child: ListView.builder(
+                itemCount: _widgetsStatus.length,
+                itemBuilder: (context, index) {
+                  final widgetStatus = _widgetsStatus[index];
+                  if (widgetStatus['Status'] == 'Review') {
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => ReviewScreen()),
+                        );
+                      },
+                      child: Container(
+                        margin: EdgeInsets.symmetric(vertical: 8.0),
+                        padding: EdgeInsets.all(16.0),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: Row(
+                          children: [
+                            Image.asset('assets/Home/Review.png', height: 50),
+                            SizedBox(width: 20),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(widgetStatus['Heading'], style: TextStyle(fontSize: 16, color: theme.colorScheme.onSurface)),
+                                Text(widgetStatus['SubHeading'], style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurface)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  } else {
+                    return GestureDetector(
+                      onTap: _showComingSoonDialog,
+                      child: Container(
+                        margin: EdgeInsets.symmetric(vertical: 8.0),
+                        padding: EdgeInsets.all(16.0),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: Row(
+                          children: [
+                            Image.asset(widgetStatus['ImagePath'], height: 50),
+                            SizedBox(width: 20),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(widgetStatus['Heading'], style: TextStyle(fontSize: 16, color: theme.colorScheme.onSurface)),
+                                Text(widgetStatus['SubHeading'], style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurface)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
                   }
-                }).toList(),
+                },
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildListItem(String title, int coins, String imagePath, BuildContext context, Widget? nextScreen, [bool showComingSoon = false]) {
-    return Card(
-      color: Theme.of(context).colorScheme.surface,
-      margin: EdgeInsets.symmetric(vertical: 8.0),
-      child: ListTile(
-        onTap: () {
-          if (title == 'Watch an ad') {
-            AdManager().showRewardedAd(context);
-          } else if (showComingSoon) {
-            _showComingSoonDialog();
-          } else if (nextScreen != null) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => nextScreen),
-            );
-          }
-        },
-        leading: CircleAvatar(
-          backgroundImage: AssetImage(imagePath),
-          radius: 24,
-        ),
-        title: Text(
-          title,
-          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Image.asset('assets/Coin.png', height: 24),
-            SizedBox(width: 8),
-            Text(
-              '$coins',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 24),
             ),
           ],
         ),
