@@ -4,25 +4,17 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:step_coin/splashscreen.dart';
 import 'package:step_coin/welcomepage.dart';
+import 'MainMenu.dart';
 import 'Theme/ThemeProvider.dart';
 import 'adManager.dart';
-import 'package:permission_handler/permission_handler.dart'; // Import permission_handler package
+import 'package:permission_handler/permission_handler.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  AdManager().updateRequestConfiguration(); // Update request configuration with test device IDs
-  AdManager().initialize(); // Initialize AdManager
+  AdManager().updateRequestConfiguration();
+  AdManager().initialize();
   print('Firebase and AdManager initialized successfully');
-
-  // Request permission
-  var status = await Permission.activityRecognition.request();
-  if (status.isGranted) {
-    print('Activity recognition permission granted.');
-  } else {
-    print('Activity recognition permission not granted.');
-    // Handle accordingly, e.g., show a dialog to the user
-  }
 
   SharedPreferences prefs = await SharedPreferences.getInstance();
   String theme = prefs.getString('theme') ?? 'light';
@@ -48,6 +40,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => SplashScreen(),
         '/welcome': (context) => WelcomePage(),
+        '/mainmenu': (context) => MainMenu(), // Ensure MainMenu route is added
       },
     );
   }

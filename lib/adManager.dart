@@ -1,6 +1,7 @@
-
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AdManager {
   static final AdManager _instance = AdManager._internal();
@@ -53,9 +54,9 @@ class AdManager {
         },
       );
 
-      _rewardedAd.show(onUserEarnedReward: (ad, reward) {
+      _rewardedAd.show(onUserEarnedReward: (ad, reward) async {
         print('User earned reward: $reward');
-        // Handle reward logic here
+        await _handleReward(context);
       });
 
       _isRewardedAdReady = false;
@@ -63,6 +64,38 @@ class AdManager {
       print('RewardedAd is not ready.');
     }
   }
+
+  Future<void> _handleReward(BuildContext context) async {
+    User? user = FirebaseAuth.instance.currentUser;
+
+    if (user != null) {
+      DocumentReference userDoc = FirebaseFirestore.instance.collection('users').doc(user.uid);
+
+      FirebaseFirestore.instance.runTransaction((transaction) async {
+        DocumentSnapshot snapshot = await transaction.get(userDoc);
+
+        if (snapshot.exists) {
+          int currentAdCoins = snapshot.get('Ad_Coins') ?? 0;
+          int currentCoins = snapshot.get('Coins') ?? 0;
+
+          transaction.update(userDoc, {
+            'Ad_Coins': currentAdCoins + 50,
+            'Coins': currentCoins + 50,
+          });
+        }
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        customPasswordSnackbar(
+          message: 'Congratulations! You have earned 50 Coins',
+          onPressed: () {},
+        ),
+      );
+    } else {
+      print('No user is signed in.');
+    }
+  }
+
   void updateRequestConfiguration() {
     final List<String> testDeviceIds = [
       '92DF66844DEC83C18072DAF5C8718BD6', // Add your test device IDs here
@@ -74,5 +107,34 @@ class AdManager {
 
     MobileAds.instance.updateRequestConfiguration(requestConfiguration);
   }
+}
 
+SnackBar customPasswordSnackbar({required String message, required VoidCallback onPressed}) {
+  return SnackBar(
+    content: Container(
+      padding: EdgeInsets.symmetric(vertical: 10),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(15.0), // Adjust the radius as needed
+            child: Image.asset(
+              'assets/ExclaimationMark.png',
+              width: 50,
+              height: 50,
+            ),
+          ),
+          SizedBox(height: 10),
+          Text(
+            message,
+            style: TextStyle(color: Colors.white),
+          ),
+          SizedBox(height: 10),
+        ],
+      ),
+    ),
+    behavior: SnackBarBehavior.floating,
+    duration: Duration(seconds: 3),
+    backgroundColor: Colors.grey[850],  // Light black/grey color
+  );
 }

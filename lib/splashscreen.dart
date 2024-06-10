@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:step_coin/welcomepage.dart';
 import 'dart:async';
 import 'MainMenu.dart';
@@ -13,6 +14,47 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    await _requestActivityRecognitionPermission();
+    _navigateBasedOnAuthStatus();
+  }
+
+  Future<void> _requestActivityRecognitionPermission() async {
+    var status = await Permission.activityRecognition.request();
+    if (status.isGranted) {
+      print('Activity recognition permission granted.');
+    } else {
+      print('Activity recognition permission not granted.');
+      await _showPermissionDialog();
+    }
+  }
+
+  Future<void> _showPermissionDialog() async {
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Activity Recognition Permission Required'),
+          content: Text(
+              'This app requires activity recognition permission to function correctly. Please enable it in the app settings.'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                openAppSettings();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _navigateBasedOnAuthStatus() {
     Timer(Duration(seconds: 3), () {
       // Check if the user is authenticated
       if (FirebaseAuth.instance.currentUser != null) {
@@ -81,7 +123,6 @@ class _SplashScreenState extends State<SplashScreen> {
                       ],
                     ),
                   ),
-
                   Positioned(
                     bottom: 10,
                     left: 0,
@@ -93,7 +134,7 @@ class _SplashScreenState extends State<SplashScreen> {
                           'assets/SplashScreen/BottomLine.png',
                           width: MediaQuery.of(context).size.width * 0.9,
                           height: 200,
-                          fit: BoxFit.fill, // Ensure the image fits the width of the container
+                          fit: BoxFit.fill,
                         ),
                         Image.asset(
                           'assets/SplashScreen/Coin.png',
@@ -111,7 +152,7 @@ class _SplashScreenState extends State<SplashScreen> {
               borderRadius: BorderRadius.circular(20),
               child: Image.asset(
                 'assets/SplashScreen/BottomImage.png',
-                width: MediaQuery.of(context).size.width * 0.9, // Adjusted to fit the container width
+                width: MediaQuery.of(context).size.width * 0.9,
                 height: MediaQuery.of(context).size.height * 0.15,
                 fit: BoxFit.cover,
               ),

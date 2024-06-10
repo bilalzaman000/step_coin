@@ -85,9 +85,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         _coinsAnimation = Tween<double>(begin: 0, end: (_steps / 3).toDouble()).animate(_animationController);
         _animationController.forward(from: 0);
       });
-
       _checkResetSteps();
-
       DateTime now = DateTime.now();
       String? uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid != null) {
