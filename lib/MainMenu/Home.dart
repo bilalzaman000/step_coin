@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:pedometer/pedometer.dart';
+import 'package:sensors_plus/sensors_plus.dart';
+
+import '../Widgets/StepsCounter.dart';
 import '../adManager.dart';
 import 'Home/ReviewScreen.dart';
 import 'Home/StepsHistory.dart';
+
 
 class HomePage extends StatefulWidget {
   @override
@@ -20,6 +23,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   List<Map<String, dynamic>> _widgetsStatus = [];
   DateTime _lastResetDate = DateTime.now();
   int _lastSteps = 0;
+
+  final StepCounter _stepCounter = StepCounter(); // Initialize StepCounter
 
   @override
   void initState() {
@@ -73,41 +78,12 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
   void _initPedometer() {
-    Pedometer pedometer = Pedometer();
-    Pedometer.stepCountStream.listen(_onStepCount, onError: _onStepCountError);
-  }
-
-  void _onStepCount(StepCount event) async {
-    int newSteps = event.steps;
-    if (_isValidStepCount(newSteps)) {
+    accelerometerEvents.listen((AccelerometerEvent event) {
+      _stepCounter.onAccelerometerEvent(event.x, event.y, event.z);
       setState(() {
-        _steps = newSteps;
-        _stepsAnimation = Tween<double>(begin: 0, end: _steps.toDouble()).animate(_animationController);
-        _coinsAnimation = Tween<double>(begin: 0, end: (_steps / 3).toDouble()).animate(_animationController);
-        _animationController.forward(from: 0);
+        _steps = _stepCounter.steps;
       });
-      DateTime now = DateTime.now();
-      String? uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid != null) {
-        DocumentReference userDoc = FirebaseFirestore.instance.collection('users').doc(uid);
-        Map<String, dynamic> userData = {
-          'CurrentDaySteps': _steps,
-          'CoinsEarnedToday': (_steps / 3).toInt(),
-          'LastResetDate': now,
-        };
-        await userDoc.set(userData, SetOptions(merge: true));
-        _checkResetSteps(); // Ensure this is checked after updating the current day's steps
-      }
-    } else {
-      print('Invalid step count detected: $newSteps');
-    }
-  }
-
-  bool _isValidStepCount(int newSteps) {
-    int stepIncrease = newSteps - _lastSteps;
-    bool isValid = stepIncrease >= 0 && stepIncrease <= 2000; // Adjust threshold as needed
-    _lastSteps = newSteps;
-    return isValid;
+    });
   }
 
   void _checkResetSteps() async {
@@ -135,13 +111,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             _lastResetDate = now;
             _coinValue += (_steps / 3).toInt();
           });
+          _stepCounter.reset(); // Reset the step counter
         }
       }
     }
-  }
-
-  void _onStepCountError(error) {
-    print('Step Count Error: $error');
   }
 
   void _showComingSoonDialog() {
