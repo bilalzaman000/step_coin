@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -8,13 +10,13 @@ import '../adManager.dart';
 import 'Home/ReviewScreen.dart';
 import 'Home/StepsHistory.dart';
 
-
 class HomePage extends StatefulWidget {
   @override
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
   int _coinValue = 0;
   int _steps = 0;
   late AnimationController _animationController;
@@ -25,6 +27,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   int _lastSteps = 0;
 
   final StepCounter _stepCounter = StepCounter(); // Initialize StepCounter
+  late StreamSubscription<AccelerometerEvent> _accelerometerSubscription;
 
   @override
   void initState() {
@@ -34,8 +37,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       vsync: this,
     );
 
-    _stepsAnimation = Tween<double>(begin: 0, end: _steps.toDouble()).animate(_animationController);
-    _coinsAnimation = Tween<double>(begin: 0, end: (_steps / 3).toDouble()).animate(_animationController);
+    _stepsAnimation =
+        Tween<double>(begin: 0, end: _steps.toDouble()).animate(_animationController);
+    _coinsAnimation =
+        Tween<double>(begin: 0, end: (_steps / 3).toDouble()).animate(_animationController);
     _fetchCoinValue();
     _initPedometer();
     _fetchWidgetStatus();
@@ -45,13 +50,17 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   @override
   void dispose() {
     _animationController.dispose();
+    _accelerometerSubscription.cancel(); // Cancel accelerometer subscription
     super.dispose();
   }
 
   Future<void> _fetchCoinValue() async {
     String? uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
-      DocumentSnapshot snapshot = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      DocumentSnapshot snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
       if (snapshot.exists) {
         setState(() {
           _coinValue = snapshot['Coins'] ?? 0;
@@ -67,8 +76,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
   Future<void> _fetchWidgetStatus() async {
     try {
-      QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('Widgets').get();
-      List<Map<String, dynamic>> widgetsStatus = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+      QuerySnapshot snapshot =
+      await FirebaseFirestore.instance.collection('Widgets').get();
+      List<Map<String, dynamic>> widgetsStatus =
+      snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
       setState(() {
         _widgetsStatus = widgetsStatus;
       });
@@ -78,12 +89,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
   void _initPedometer() {
-    accelerometerEvents.listen((AccelerometerEvent event) {
-      _stepCounter.onAccelerometerEvent(event.x, event.y, event.z);
-      setState(() {
-        _steps = _stepCounter.steps;
-      });
-    });
+    _accelerometerSubscription =
+        accelerometerEvents.listen((AccelerometerEvent event) {
+          _stepCounter.onAccelerometerEvent(event.x, event.y, event.z);
+          setState(() {
+            _steps = _stepCounter.steps;
+          });
+        });
   }
 
   void _checkResetSteps() async {
@@ -91,7 +103,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     if (now.difference(_lastResetDate).inDays >= 1) {
       String? uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid != null) {
-        DocumentReference userDoc = FirebaseFirestore.instance.collection('users').doc(uid);
+        DocumentReference userDoc =
+        FirebaseFirestore.instance.collection('users').doc(uid);
         DocumentSnapshot snapshot = await userDoc.get();
         if (snapshot.exists) {
           List<dynamic> dailySteps = snapshot['DailySteps'] ?? [];
@@ -123,11 +136,15 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       builder: (BuildContext context) {
         return AlertDialog(
           backgroundColor: Theme.of(context).colorScheme.surface,
-          title: Text('Please Wait...', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
-          content: Text('Coming soon', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+          title: Text('Please Wait...',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+          content: Text('Coming soon',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
           actions: [
             TextButton(
-              child: Text('OK', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+              child: Text('OK',
+                  style:
+                  TextStyle(color: Theme.of(context).colorScheme.primary)),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -141,20 +158,32 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    Color appBarColor = theme.brightness == Brightness.light ? Colors.white : Colors.black;
+    Color appBarColor =
+    theme.brightness == Brightness.light ? Colors.white : Colors.black;
     return Scaffold(
       backgroundColor: appBarColor,
       appBar: AppBar(
-        backgroundColor: theme.brightness == Brightness.light ? Colors.white : Colors.black,
+        backgroundColor: theme.brightness == Brightness.light
+            ? Colors.white
+            : Colors.black,
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('   StepCoins', style: TextStyle(color: theme.brightness == Brightness.light ? Colors.black : Colors.white)),
+            Text('   StepCoins',
+                style: TextStyle(
+                    color: theme.brightness == Brightness.light
+                        ? Colors.black
+                        : Colors.white)),
             Row(
               children: [
                 Image.asset('assets/Coin.png', height: 24),
                 SizedBox(width: 8),
-                Text('$_coinValue', style: TextStyle(fontSize: 24, color: theme.brightness == Brightness.light ? Colors.black : Colors.white)),
+                Text('$_coinValue',
+                    style: TextStyle(
+                        fontSize: 24,
+                        color: theme.brightness == Brightness.light
+                            ? Colors.black
+                            : Colors.white)),
                 SizedBox(width: 8),
               ],
             ),
@@ -184,14 +213,19 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text('Total Steps', style: TextStyle(fontSize: 18, color: theme.colorScheme.onSurface)),
+                    Text('Total Steps',
+                        style: TextStyle(
+                            fontSize: 18, color: theme.colorScheme.onSurface)),
                     SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Image.asset('assets/Home/Steps.png', height: 50),
                         SizedBox(width: 8),
-                        Text('${_steps.toString()}', style: TextStyle(fontSize: 50, color: theme.colorScheme.onSurface)),
+                        Text('${_steps.toString()}',
+                            style: TextStyle(
+                                fontSize: 50,
+                                color: theme.colorScheme.onSurface)),
                       ],
                     ),
                     SizedBox(height: 10),
@@ -200,9 +234,15 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                       children: [
                         Image.asset('assets/Coin.png', height: 24),
                         SizedBox(width: 8),
-                        Text('${(_steps / 3).toInt()}', style: TextStyle(fontSize: 18, color: theme.colorScheme.onSurface)),
+                        Text('${(_steps / 3).toInt()}',
+                            style: TextStyle(
+                                fontSize: 18,
+                                color: theme.colorScheme.onSurface)),
                         SizedBox(width: 6),
-                        Text('Earned Today', style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurface)),
+                        Text('Earned Today',
+                            style: TextStyle(
+                                fontSize: 10,
+                                color: theme.colorScheme.onSurface)),
                       ],
                     ),
                   ],
@@ -210,20 +250,28 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               ),
             ),
             SizedBox(height: 20),
-            Text('More Ways to Earn Coins', style: TextStyle(color: theme.colorScheme.onBackground, fontSize: 18)),
+            Text('More Ways to Earn Coins',
+                style:
+                TextStyle(color: theme.colorScheme.onBackground, fontSize: 18)),
             SizedBox(height: 10),
             Expanded(
               child: ListView(
-                children: _widgetsStatus.where((widget) => widget['enabled'] == true).map((widget) {
+                children: _widgetsStatus
+                    .where((widget) => widget['enabled'] == true)
+                    .map((widget) {
                   switch (widget['name']) {
                     case 'Watch an ad':
-                      return _buildListItem('Watch an ad', 50, 'assets/Home/Video.png', context, null);
+                      return _buildListItem('Watch an ad', 50,
+                          'assets/Home/Video.png', context, null);
                     case 'Give a Review':
-                      return _buildListItem('Give a Review', 500, 'assets/Home/Star.png', context, ReviewScreen());
+                      return _buildListItem('Give a Review', 500,
+                          'assets/Home/Star.png', context, ReviewScreen());
                     case 'Submit A Survey':
-                      return _buildListItem('Submit A Survey', 77, 'assets/Home/Pen.png', context, null, true);
+                      return _buildListItem('Submit A Survey', 77,
+                          'assets/Home/Pen.png', context, null, true);
                     case 'Play A Game':
-                      return _buildListItem('Play A Game', 77, 'assets/Home/Cube.png', context, null, true);
+                      return _buildListItem('Play A Game', 77,
+                          'assets/Home/Cube.png', context, null, true);
                     default:
                       return Container();
                   }
@@ -236,7 +284,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _buildListItem(String title, int coins, String imagePath, BuildContext context, Widget? nextScreen, [bool showComingSoon = false]) {
+  Widget _buildListItem(String title, int coins, String imagePath,
+      BuildContext context, Widget? nextScreen,
+      [bool showComingSoon = false]) {
     return Card(
       color: Theme.of(context).colorScheme.surface,
       margin: EdgeInsets.symmetric(vertical: 8.0),
@@ -259,7 +309,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         ),
         title: Text(
           title,
-          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+          style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -268,7 +319,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             SizedBox(width: 8),
             Text(
               '$coins',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 24),
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 24),
             ),
           ],
         ),
