@@ -8,6 +8,7 @@ class StepCounter {
   bool _isPositivePeak = false;
   int _steps = 0;
   int _lastStepTime = 0;
+
   int get steps => _steps;
 
   StepCounter([this._steps = 0]);

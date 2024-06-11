@@ -51,6 +51,7 @@ dependencies:
   flutter_foreground_task: ^6.4.0
   sensors_plus: ^5.0.1
   flutter_background: ^1.2.0
+  workmanager: ^0.5.2
 
 
 
