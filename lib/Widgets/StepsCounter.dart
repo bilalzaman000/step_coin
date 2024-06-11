@@ -1,7 +1,7 @@
 import 'dart:math';
 
 class StepCounter {
-  static const double stepThreshold = 14.0;
+  static const double stepThreshold = 13.5;
   static const int minTimeBetweenSteps = 250;
 
   double _previousAccMagnitude = 0.0;
