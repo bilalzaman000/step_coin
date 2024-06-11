@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../Widgets/StepsCounter.dart';
 import '../adManager.dart';
 import 'Home/ReviewScreen.dart';
@@ -13,6 +14,7 @@ class HomePage extends StatefulWidget {
   @override
   _HomePageState createState() => _HomePageState();
 }
+
 class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   int _coinValue = 0;
   int _steps = 0;
