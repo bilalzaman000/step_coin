@@ -242,9 +242,27 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
 
   Widget buildAppList(List<AppInfo> apps, ThemeData theme, bool isReviewedTab) {
     if (apps.isEmpty) {
-      return Center(child: Text('No Apps Found', style: theme.textTheme.bodyLarge));
+      return Scaffold(
+        backgroundColor: theme.colorScheme.background,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset('assets/Complete.png'),
+              SizedBox(height: 20), // Add some spacing between the image and text
+              Text(
+                'No completed Reviews',
+                style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                'You haven’t completed any reviews',
+                style: theme.textTheme.bodyLarge,
+              ),
+            ],
+          ),
+        ),
+      );
     }
-
     return ListView.builder(
       itemCount: apps.length,
       itemBuilder: (context, index) {
