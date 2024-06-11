@@ -35,4 +35,8 @@ class StepCounter {
     _steps = 0;
     _lastStepTime = 0;
   }
+
+  void setSteps(int steps) {
+    _steps = steps;
+  }
 }

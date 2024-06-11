@@ -38,8 +38,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
     _stepsAnimation = Tween<double>(begin: 0, end: _steps.toDouble()).animate(_animationController);
     _coinsAnimation = Tween<double>(begin: 0, end: (_steps / 3).toDouble()).animate(_animationController);
-    _initPedometer();
-    _fetchCoinValueAndSteps();
+    _fetchCoinValueAndSteps().then((_) => _initPedometer());
     _fetchWidgetStatus();
     _animationController.forward();
   }
@@ -86,6 +85,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
   void _initPedometer() {
+    _stepCounter.setSteps(_steps); // Initialize StepCounter with saved steps
     _accelerometerSubscription = accelerometerEvents.listen((AccelerometerEvent event) {
       _stepCounter.onAccelerometerEvent(event.x, event.y, event.z);
       setState(() {
