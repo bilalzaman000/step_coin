@@ -50,6 +50,7 @@ dependencies:
   fl_chart: ^0.68.0
   flutter_foreground_task: ^6.4.0
   sensors_plus: ^5.0.1
+  flutter_background: ^1.2.0
 
 
 

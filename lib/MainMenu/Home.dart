@@ -1,9 +1,9 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:sensors_plus/sensors_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../Widgets/StepsCounter.dart';
 import '../adManager.dart';
@@ -15,8 +15,7 @@ class HomePage extends StatefulWidget {
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage>
-    with SingleTickerProviderStateMixin {
+class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   int _coinValue = 0;
   int _steps = 0;
   late AnimationController _animationController;
@@ -37,12 +36,10 @@ class _HomePageState extends State<HomePage>
       vsync: this,
     );
 
-    _stepsAnimation =
-        Tween<double>(begin: 0, end: _steps.toDouble()).animate(_animationController);
-    _coinsAnimation =
-        Tween<double>(begin: 0, end: (_steps / 3).toDouble()).animate(_animationController);
-    _fetchCoinValue();
+    _stepsAnimation = Tween<double>(begin: 0, end: _steps.toDouble()).animate(_animationController);
+    _coinsAnimation = Tween<double>(begin: 0, end: (_steps / 3).toDouble()).animate(_animationController);
     _initPedometer();
+    _fetchCoinValueAndSteps();
     _fetchWidgetStatus();
     _animationController.forward();
   }
@@ -54,19 +51,21 @@ class _HomePageState extends State<HomePage>
     super.dispose();
   }
 
-  Future<void> _fetchCoinValue() async {
+  Future<void> _fetchCoinValueAndSteps() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
     String? uid = FirebaseAuth.instance.currentUser?.uid;
+
     if (uid != null) {
-      DocumentSnapshot snapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .get();
+      DocumentSnapshot snapshot = await FirebaseFirestore.instance.collection('users').doc(uid).get();
       if (snapshot.exists) {
         setState(() {
-          _coinValue = snapshot['Coins'] ?? 0;
-          _lastResetDate = (snapshot['LastResetDate'] as Timestamp).toDate();
-          _steps = snapshot['CurrentDaySteps'] ?? 0;
+          _coinValue = prefs.getInt('coinValue') ?? snapshot['Coins'] ?? 0;
+          _steps = prefs.getInt('steps') ?? snapshot['CurrentDaySteps'] ?? 0;
+          _lastResetDate = (prefs.getString('lastResetDate') != null)
+              ? DateTime.parse(prefs.getString('lastResetDate')!)
+              : (snapshot['LastResetDate'] as Timestamp).toDate();
         });
+
         _checkResetSteps();
       } else {
         print('Document does not exist');
@@ -76,10 +75,8 @@ class _HomePageState extends State<HomePage>
 
   Future<void> _fetchWidgetStatus() async {
     try {
-      QuerySnapshot snapshot =
-      await FirebaseFirestore.instance.collection('Widgets').get();
-      List<Map<String, dynamic>> widgetsStatus =
-      snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+      QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('Widgets').get();
+      List<Map<String, dynamic>> widgetsStatus = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
       setState(() {
         _widgetsStatus = widgetsStatus;
       });
@@ -89,13 +86,28 @@ class _HomePageState extends State<HomePage>
   }
 
   void _initPedometer() {
-    _accelerometerSubscription =
-        accelerometerEvents.listen((AccelerometerEvent event) {
-          _stepCounter.onAccelerometerEvent(event.x, event.y, event.z);
-          setState(() {
-            _steps = _stepCounter.steps;
-          });
-        });
+    _accelerometerSubscription = accelerometerEvents.listen((AccelerometerEvent event) {
+      _stepCounter.onAccelerometerEvent(event.x, event.y, event.z);
+      setState(() {
+        _steps = _stepCounter.steps;
+      });
+      _saveStepsLocally();
+    });
+  }
+
+  Future<void> _saveStepsLocally() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setInt('steps', _steps);
+  }
+
+  Future<void> _updateDatabaseWithSteps() async {
+    String? uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      await FirebaseFirestore.instance.collection('users').doc(uid).update({
+        'CurrentDaySteps': _steps,
+        'CoinsEarnedToday': (_steps / 3).toInt(),
+      });
+    }
   }
 
   void _checkResetSteps() async {
@@ -103,8 +115,7 @@ class _HomePageState extends State<HomePage>
     if (now.difference(_lastResetDate).inDays >= 1) {
       String? uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid != null) {
-        DocumentReference userDoc =
-        FirebaseFirestore.instance.collection('users').doc(uid);
+        DocumentReference userDoc = FirebaseFirestore.instance.collection('users').doc(uid);
         DocumentSnapshot snapshot = await userDoc.get();
         if (snapshot.exists) {
           List<dynamic> dailySteps = snapshot['DailySteps'] ?? [];
@@ -118,13 +129,21 @@ class _HomePageState extends State<HomePage>
             'CurrentDaySteps': 0,
             'LastResetDate': now,
             'Coins': FieldValue.increment((_steps / 3).toInt()),
+            'CoinsEarnedToday': FieldValue.increment((_steps / 3).toInt()),
           });
+
           setState(() {
             _steps = 0;
             _lastResetDate = now;
             _coinValue += (_steps / 3).toInt();
           });
+
           _stepCounter.reset(); // Reset the step counter
+
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          prefs.setInt('coinValue', _coinValue);
+          prefs.setInt('steps', _steps);
+          prefs.setString('lastResetDate', _lastResetDate.toIso8601String());
         }
       }
     }
@@ -136,15 +155,11 @@ class _HomePageState extends State<HomePage>
       builder: (BuildContext context) {
         return AlertDialog(
           backgroundColor: Theme.of(context).colorScheme.surface,
-          title: Text('Please Wait...',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
-          content: Text('Coming soon',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+          title: Text('Please Wait...', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+          content: Text('Coming soon', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
           actions: [
             TextButton(
-              child: Text('OK',
-                  style:
-                  TextStyle(color: Theme.of(context).colorScheme.primary)),
+              child: Text('OK', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -158,32 +173,20 @@ class _HomePageState extends State<HomePage>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    Color appBarColor =
-    theme.brightness == Brightness.light ? Colors.white : Colors.black;
+    Color appBarColor = theme.brightness == Brightness.light ? Colors.white : Colors.black;
     return Scaffold(
       backgroundColor: appBarColor,
       appBar: AppBar(
-        backgroundColor: theme.brightness == Brightness.light
-            ? Colors.white
-            : Colors.black,
+        backgroundColor: theme.brightness == Brightness.light ? Colors.white : Colors.black,
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('   StepCoins',
-                style: TextStyle(
-                    color: theme.brightness == Brightness.light
-                        ? Colors.black
-                        : Colors.white)),
+            Text('   StepCoins', style: TextStyle(color: theme.brightness == Brightness.light ? Colors.black : Colors.white)),
             Row(
               children: [
                 Image.asset('assets/Coin.png', height: 24),
                 SizedBox(width: 8),
-                Text('$_coinValue',
-                    style: TextStyle(
-                        fontSize: 24,
-                        color: theme.brightness == Brightness.light
-                            ? Colors.black
-                            : Colors.white)),
+                Text('$_coinValue', style: TextStyle(fontSize: 24, color: theme.brightness == Brightness.light ? Colors.black : Colors.white)),
                 SizedBox(width: 8),
               ],
             ),
@@ -196,7 +199,8 @@ class _HomePageState extends State<HomePage>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             GestureDetector(
-              onTap: () {
+              onTap: () async {
+                await _updateDatabaseWithSteps();  // Update the database with steps when opening the history screen
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => StepsHistory()),
@@ -213,19 +217,14 @@ class _HomePageState extends State<HomePage>
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text('Total Steps',
-                        style: TextStyle(
-                            fontSize: 18, color: theme.colorScheme.onSurface)),
+                    Text('Total Steps', style: TextStyle(fontSize: 18, color: theme.colorScheme.onSurface)),
                     SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Image.asset('assets/Home/Steps.png', height: 50),
                         SizedBox(width: 8),
-                        Text('${_steps.toString()}',
-                            style: TextStyle(
-                                fontSize: 50,
-                                color: theme.colorScheme.onSurface)),
+                        Text('${_steps.toString()}', style: TextStyle(fontSize: 50, color: theme.colorScheme.onSurface)),
                       ],
                     ),
                     SizedBox(height: 10),
@@ -234,15 +233,9 @@ class _HomePageState extends State<HomePage>
                       children: [
                         Image.asset('assets/Coin.png', height: 24),
                         SizedBox(width: 8),
-                        Text('${(_steps / 3).toInt()}',
-                            style: TextStyle(
-                                fontSize: 18,
-                                color: theme.colorScheme.onSurface)),
+                        Text('${(_steps / 3).toInt()}', style: TextStyle(fontSize: 18, color: theme.colorScheme.onSurface)),
                         SizedBox(width: 6),
-                        Text('Earned Today',
-                            style: TextStyle(
-                                fontSize: 10,
-                                color: theme.colorScheme.onSurface)),
+                        Text('Earned Today', style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurface)),
                       ],
                     ),
                   ],
@@ -250,9 +243,7 @@ class _HomePageState extends State<HomePage>
               ),
             ),
             SizedBox(height: 20),
-            Text('More Ways to Earn Coins',
-                style:
-                TextStyle(color: theme.colorScheme.onBackground, fontSize: 18)),
+            Text('More Ways to Earn Coins', style: TextStyle(color: theme.colorScheme.onBackground, fontSize: 18)),
             SizedBox(height: 10),
             Expanded(
               child: ListView(
@@ -261,17 +252,13 @@ class _HomePageState extends State<HomePage>
                     .map((widget) {
                   switch (widget['name']) {
                     case 'Watch an ad':
-                      return _buildListItem('Watch an ad', 50,
-                          'assets/Home/Video.png', context, null);
+                      return _buildListItem('Watch an ad', 50, 'assets/Home/Video.png', context, null);
                     case 'Give a Review':
-                      return _buildListItem('Give a Review', 500,
-                          'assets/Home/Star.png', context, ReviewScreen());
+                      return _buildListItem('Give a Review', 500, 'assets/Home/Star.png', context, ReviewScreen());
                     case 'Submit A Survey':
-                      return _buildListItem('Submit A Survey', 77,
-                          'assets/Home/Pen.png', context, null, true);
+                      return _buildListItem('Submit A Survey', 77, 'assets/Home/Pen.png', context, null, true);
                     case 'Play A Game':
-                      return _buildListItem('Play A Game', 77,
-                          'assets/Home/Cube.png', context, null, true);
+                      return _buildListItem('Play A Game', 77, 'assets/Home/Cube.png', context, null, true);
                     default:
                       return Container();
                   }
@@ -284,19 +271,18 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget _buildListItem(String title, int coins, String imagePath,
-      BuildContext context, Widget? nextScreen,
-      [bool showComingSoon = false]) {
+  Widget _buildListItem(String title, int coins, String imagePath, BuildContext context, Widget? nextScreen, [bool showComingSoon = false]) {
     return Card(
       color: Theme.of(context).colorScheme.surface,
       margin: EdgeInsets.symmetric(vertical: 8.0),
       child: ListTile(
-        onTap: () {
+        onTap: () async {
           if (title == 'Watch an ad') {
             AdManager().showRewardedAd(context);
           } else if (showComingSoon) {
             _showComingSoonDialog();
           } else if (nextScreen != null) {
+            await _updateDatabaseWithSteps();  // Update the database with steps before navigating
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => nextScreen),
@@ -309,8 +295,7 @@ class _HomePageState extends State<HomePage>
         ),
         title: Text(
           title,
-          style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -319,9 +304,7 @@ class _HomePageState extends State<HomePage>
             SizedBox(width: 8),
             Text(
               '$coins',
-              style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontSize: 24),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 24),
             ),
           ],
         ),
