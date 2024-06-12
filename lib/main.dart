@@ -12,7 +12,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import 'adManager.dart';
-
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     try {
@@ -48,23 +47,18 @@ void callbackDispatcher() {
           prefs.setInt('coinValue', (prefs.getInt('coinValue') ?? 0) + (steps / 3).toInt());
           prefs.setInt('steps', 0);
           prefs.setString('lastResetDate', now.toIso8601String());
-        }
-      } else {
-        String? uid = FirebaseAuth.instance.currentUser?.uid;
-        if (uid != null) {
-          await FirebaseFirestore.instance.collection('users').doc(uid).update({
-            'CurrentDaySteps': steps,
-            'CoinsEarnedToday': (steps / 3).toInt(),
-          });
+          prefs.setInt('initialSteps', 0);
         }
       }
 
       return Future.value(true);
     } catch (e) {
+      print("Error in callbackDispatcher: $e");
       return Future.value(false);
     }
   });
 }
+
 
 Future<void> requestPermissions() async {
   await [

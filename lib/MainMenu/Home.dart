@@ -34,10 +34,12 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
     _stepsAnimation = Tween<double>(begin: 0, end: _steps.toDouble()).animate(_animationController);
     _coinsAnimation = Tween<double>(begin: 0, end: (_steps / 3).toDouble()).animate(_animationController);
-    _fetchCoinValueAndSteps().then((_) => _initPedometer());
+    _fetchCoinValueAndSteps().then((_) {
+      _checkResetSteps();
+      _initPedometer();
+    });
     _fetchWidgetStatus();
     _animationController.forward();
-    _checkResetSteps();
   }
 
   @override
@@ -62,8 +64,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               : (snapshot['LastResetDate'] as Timestamp).toDate();
           _initialSteps = prefs.getInt('initialSteps') ?? 0;
         });
-
-        _checkResetSteps();
       } else {
         print('Document does not exist');
       }
@@ -112,6 +112,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setInt('steps', _steps);
   }
+
   Future<void> _updateDatabaseWithSteps() async {
     String? uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
@@ -165,7 +166,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     }
   }
 
-
   Future<void> resetSteps() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String? uid = FirebaseAuth.instance.currentUser?.uid;
@@ -203,19 +203,19 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         setState(() {
           _coinValue = prefs.getInt('coinValue')!;
           _steps = 0;
-          _initialSteps = 0; // Reset initial steps
-          _lastResetDate = now;
+          _initialSteps = 0;
         });
       }
     }
   }
 
-  void _checkResetSteps() async {
-    DateTime now = DateTime.now();
+  void _checkResetSteps() {
+    final DateTime now = DateTime.now();
     if (now.difference(_lastResetDate).inDays >= 1) {
-      await resetSteps();
+      resetSteps();
     }
   }
+
 
   void _showComingSoonDialog() {
     showDialog(
