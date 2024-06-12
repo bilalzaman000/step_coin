@@ -29,22 +29,42 @@ class _StepsHistoryState extends State<StepsHistory> {
       DocumentSnapshot snapshot = await FirebaseFirestore.instance.collection('users').doc(uid).get();
       if (snapshot.exists) {
         List<dynamic> dailySteps = snapshot['DailySteps'] ?? [];
+
+        // Filter out records older than 7 days
+        DateTime sevenDaysAgo = DateTime.now().subtract(Duration(days: 7));
+        List<Map<String, dynamic>> filteredSteps = dailySteps.where((entry) {
+          DateTime date;
+          if (entry['date'] is Timestamp) {
+            date = (entry['date'] as Timestamp).toDate();
+          } else if (entry['date'] is String) {
+            date = DateTime.parse(entry['date']);
+          } else {
+            return false;
+          }
+          return date.isAfter(sevenDaysAgo);
+        }).map((entry) {
+          DateTime date;
+          if (entry['date'] is Timestamp) {
+            date = (entry['date'] as Timestamp).toDate();
+          } else if (entry['date'] is String) {
+            date = DateTime.parse(entry['date']);
+          } else {
+            date = DateTime.now(); // Fallback in case of an unexpected type
+          }
+          return {
+            'date': date,
+            'steps': entry['steps'],
+            'coins': entry['coins'],
+          };
+        }).toList();
+
+        // Limit to the last 7 records
+        if (filteredSteps.length > 7) {
+          filteredSteps = filteredSteps.sublist(filteredSteps.length - 7);
+        }
+
         setState(() {
-          _stepHistory = dailySteps.map((entry) {
-            DateTime date;
-            if (entry['date'] is Timestamp) {
-              date = (entry['date'] as Timestamp).toDate();
-            } else if (entry['date'] is String) {
-              date = DateTime.parse(entry['date']);
-            } else {
-              date = DateTime.now(); // Fallback in case of an unexpected type
-            }
-            return {
-              'date': date,
-              'steps': entry['steps'],
-              'coins': entry['coins'],
-            };
-          }).toList().reversed.toList();
+          _stepHistory = filteredSteps.reversed.toList();
           _currentSteps = prefs.getInt('steps') ?? 0;
           _currentCoins = (_currentSteps / 3).toInt();
         });
@@ -100,7 +120,6 @@ class _StepsHistoryState extends State<StepsHistory> {
                       Text('Earned Today', style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurface)),
                     ],
                   ),
-
                 ],
               ),
             ),
@@ -109,7 +128,7 @@ class _StepsHistoryState extends State<StepsHistory> {
                 children: [
                   SizedBox(height: 100),
                   Expanded(child: _buildBarChart()),
-                 SizedBox(height: 20,),
+                  SizedBox(height: 20,),
                 ],
               ),
             ),
@@ -118,6 +137,7 @@ class _StepsHistoryState extends State<StepsHistory> {
       ),
     );
   }
+
   Widget _buildBarChart() {
     return Container(
       color: Theme.of(context).colorScheme.surface, // Match the background color
@@ -129,17 +149,7 @@ class _StepsHistoryState extends State<StepsHistory> {
               maxY: _stepHistory.isNotEmpty ? _stepHistory.map((e) => e['steps']).reduce((a, b) => a > b ? a : b).toDouble() : 10,
               barTouchData: BarTouchData(
                 touchTooltipData: BarTouchTooltipData(
-                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                    final index = group.x.toInt();
-                    if (index >= 0 && index < _stepHistory.length) {
-                      final entry = _stepHistory[index];
-                      return BarTooltipItem(
-                        'Coins: ${entry['coins']}',
-                        TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                      );
-                    }
-                    return null;
-                  },
+                  getTooltipItem: (group, groupIndex, rod, rodIndex) => null,
                 ),
               ),
               titlesData: FlTitlesData(
@@ -183,7 +193,9 @@ class _StepsHistoryState extends State<StepsHistory> {
                     BarChartRodData(
                       toY: data['steps'].toDouble(),
                       gradient: LinearGradient(
-                        colors: [Colors.orange, Colors.yellow],
+                        colors: index == _stepHistory.length - 1
+                            ? [Colors.orange, Colors.yellow]
+                            : [Colors.blue, Colors.lightBlueAccent],
                         begin: Alignment.bottomCenter,
                         end: Alignment.topCenter,
                       ),
@@ -196,7 +208,7 @@ class _StepsHistoryState extends State<StepsHistory> {
                       ),
                     ),
                   ],
-                  showingTooltipIndicators: [0],
+                  showingTooltipIndicators: [],
                   barsSpace: 8,
                 );
               }).toList(),
@@ -236,7 +248,4 @@ class _StepsHistoryState extends State<StepsHistory> {
       ),
     );
   }
-
-
-
 }

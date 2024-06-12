@@ -10,8 +10,11 @@ import 'package:workmanager/workmanager.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:permission_handler/permission_handler.dart';
-
 import 'adManager.dart';
+
+
+
+
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     try {
@@ -58,6 +61,7 @@ void callbackDispatcher() {
     }
   });
 }
+
 
 
 Future<void> requestPermissions() async {

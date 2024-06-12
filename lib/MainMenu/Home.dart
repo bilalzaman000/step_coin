@@ -15,6 +15,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   int _coinValue = 0;
+  int _TcoinValue = 0;
   int _steps = 0;
   int _initialSteps = 0;
   late AnimationController _animationController;
@@ -57,7 +58,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       DocumentSnapshot snapshot = await FirebaseFirestore.instance.collection('users').doc(uid).get();
       if (snapshot.exists) {
         setState(() {
-          _coinValue = prefs.getInt('coinValue') ?? snapshot['Coins'] ?? 0;
+          _TcoinValue = snapshot['Coins'] ?? 0;
+          print("$_TcoinValue");
           _steps = prefs.getInt('steps') ?? snapshot['CurrentDaySteps'] ?? 0;
           _lastResetDate = (prefs.getString('lastResetDate') != null)
               ? DateTime.parse(prefs.getString('lastResetDate')!)
@@ -123,10 +125,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         final currentSteps = _steps;
         final currentCoins = (currentSteps / 3).toInt();
 
-        // Fetch existing daily steps
         List<dynamic> dailySteps = snapshot['DailySteps'] ?? [];
 
-        // Check if there's an entry for today
         bool todayEntryExists = false;
         for (var entry in dailySteps) {
           DateTime entryDate;
@@ -135,7 +135,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           } else if (entry['date'] is String) {
             entryDate = DateTime.parse(entry['date']);
           } else {
-            continue; // Skip entries with invalid date types
+            continue;
           }
 
           if (entryDate.day == now.day &&
@@ -148,7 +148,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           }
         }
 
-        // If no entry for today, add a new one
         if (!todayEntryExists) {
           dailySteps.add({
             'date': now,
@@ -161,6 +160,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           'DailySteps': dailySteps,
           'CurrentDaySteps': currentSteps,
           'CoinsEarnedToday': currentCoins,
+        });
+
+        setState(() {
+          _coinValue = currentCoins;
         });
       }
     }
@@ -178,11 +181,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         final int currentSteps = prefs.getInt('steps') ?? 0;
         final int coinsEarnedToday = (currentSteps / 3).toInt();
         final DateTime now = DateTime.now();
-        final DateTime lastResetDate = DateTime.parse(prefs.getString('lastResetDate') ?? now.toIso8601String());
 
         List<dynamic> dailySteps = snapshot['DailySteps'] ?? [];
         dailySteps.add({
-          'date': lastResetDate.toIso8601String(),
+          'date': now.toIso8601String(),
           'steps': currentSteps,
           'coins': coinsEarnedToday,
         });
@@ -195,10 +197,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           'CoinsEarnedToday': 0,
         });
 
-        prefs.setInt('coinValue', prefs.getInt('coinValue')! + coinsEarnedToday);
+        prefs.setInt('coinValue', (prefs.getInt('coinValue') ?? 0) + coinsEarnedToday);
         prefs.setInt('steps', 0);
         prefs.setString('lastResetDate', now.toIso8601String());
-        prefs.setInt('initialSteps', 0); // Reset initial steps
+        prefs.setInt('initialSteps', 0);
 
         setState(() {
           _coinValue = prefs.getInt('coinValue')!;
@@ -208,6 +210,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       }
     }
   }
+
 
   void _checkResetSteps() {
     final DateTime now = DateTime.now();
@@ -254,7 +257,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               children: [
                 Image.asset('assets/Coin.png', height: 24),
                 SizedBox(width: 8),
-                Text('$_coinValue', style: TextStyle(fontSize: 24, color: theme.brightness == Brightness.light ? Colors.black : Colors.white)),
+                Text('$_TcoinValue', style: TextStyle(fontSize: 24, color: theme.brightness == Brightness.light ? Colors.black : Colors.white)),
                 SizedBox(width: 8),
               ],
             ),
@@ -285,7 +288,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text('Total Steps', style: TextStyle(fontSize: 18, color: theme.colorScheme.onSurface)),
+                    Text('Today Steps', style: TextStyle(fontSize: 18, color: theme.colorScheme.onSurface)),
                     SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
