@@ -1,14 +1,12 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:sensors_plus/sensors_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../Widgets/StepsCounter.dart';
 import '../adManager.dart';
 import 'Home/ReviewScreen.dart';
 import 'Home/StepsHistory.dart';
+import 'package:pedometer/pedometer.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -18,15 +16,13 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   int _coinValue = 0;
   int _steps = 0;
+  int _initialSteps = 0;
   late AnimationController _animationController;
   late Animation<double> _stepsAnimation;
   late Animation<double> _coinsAnimation;
   List<Map<String, dynamic>> _widgetsStatus = [];
   DateTime _lastResetDate = DateTime.now();
-  int _lastSteps = 0;
-
-  final StepCounter _stepCounter = StepCounter(); // Initialize StepCounter
-  late StreamSubscription<AccelerometerEvent> _accelerometerSubscription;
+  late StreamSubscription<StepCount> _stepCountSubscription;
 
   @override
   void initState() {
@@ -41,12 +37,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     _fetchCoinValueAndSteps().then((_) => _initPedometer());
     _fetchWidgetStatus();
     _animationController.forward();
+    _checkResetSteps();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
-    _accelerometerSubscription.cancel(); // Cancel accelerometer subscription
+    _stepCountSubscription.cancel();
     super.dispose();
   }
 
@@ -63,6 +60,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           _lastResetDate = (prefs.getString('lastResetDate') != null)
               ? DateTime.parse(prefs.getString('lastResetDate')!)
               : (snapshot['LastResetDate'] as Timestamp).toDate();
+          _initialSteps = prefs.getInt('initialSteps') ?? 0;
         });
 
         _checkResetSteps();
@@ -85,14 +83,28 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
   void _initPedometer() {
-    _stepCounter.setSteps(_steps); // Initialize StepCounter with saved steps
-    _accelerometerSubscription = accelerometerEvents.listen((AccelerometerEvent event) {
-      _stepCounter.onAccelerometerEvent(event.x, event.y, event.z);
-      setState(() {
-        _steps = _stepCounter.steps;
-      });
-      _saveStepsLocally();
+    Pedometer pedometer = Pedometer();
+    _stepCountSubscription = Pedometer.stepCountStream.listen(_onStepCount, onError: _onStepCountError);
+  }
+
+  void _onStepCount(StepCount event) {
+    if (_initialSteps == 0) {
+      _initialSteps = event.steps;
+      _saveInitialSteps();
+    }
+    setState(() {
+      _steps = event.steps - _initialSteps;
     });
+    _saveStepsLocally();
+  }
+
+  void _onStepCountError(error) {
+    print('Pedometer Error: $error');
+  }
+
+  Future<void> _saveInitialSteps() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setInt('initialSteps', _initialSteps);
   }
 
   Future<void> _saveStepsLocally() async {
@@ -120,7 +132,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         if (snapshot.exists) {
           List<dynamic> dailySteps = snapshot['DailySteps'] ?? [];
           dailySteps.add({
-            'date': _lastResetDate,
+            'date': _lastResetDate.toIso8601String(),
             'steps': _steps,
             'coins': (_steps / 3).toInt(),
           });
@@ -136,14 +148,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             _steps = 0;
             _lastResetDate = now;
             _coinValue += (_steps / 3).toInt();
+            _initialSteps = 0; // Reset initial steps
           });
-
-          _stepCounter.reset(); // Reset the step counter
 
           SharedPreferences prefs = await SharedPreferences.getInstance();
           prefs.setInt('coinValue', _coinValue);
           prefs.setInt('steps', _steps);
           prefs.setString('lastResetDate', _lastResetDate.toIso8601String());
+          prefs.setInt('initialSteps', _initialSteps);
         }
       }
     }
@@ -200,7 +212,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           children: [
             GestureDetector(
               onTap: () async {
-                await _updateDatabaseWithSteps();  // Update the database with steps when opening the history screen
+                await _updateDatabaseWithSteps();
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => StepsHistory()),
@@ -282,7 +294,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           } else if (showComingSoon) {
             _showComingSoonDialog();
           } else if (nextScreen != null) {
-            await _updateDatabaseWithSteps();  // Update the database with steps before navigating
+            await _updateDatabaseWithSteps();
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => nextScreen),

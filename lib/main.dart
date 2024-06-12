@@ -6,22 +6,96 @@ import 'package:step_coin/splashscreen.dart';
 import 'package:step_coin/welcomepage.dart';
 import 'MainMenu.dart';
 import 'Theme/ThemeProvider.dart';
-import 'adManager.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:workmanager/workmanager.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:permission_handler/permission_handler.dart';
 
-Future<void> main() async {
+import 'adManager.dart';
+
+void callbackDispatcher() {
+  Workmanager().executeTask((task, inputData) async {
+    try {
+      WidgetsFlutterBinding.ensureInitialized();
+      await Firebase.initializeApp();
+
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      int steps = prefs.getInt('steps') ?? 0;
+
+      DateTime now = DateTime.now();
+      DateTime lastResetDate = DateTime.parse(prefs.getString('lastResetDate') ?? now.toIso8601String());
+
+      if (now.difference(lastResetDate).inDays >= 1) {
+        String? uid = FirebaseAuth.instance.currentUser?.uid;
+        if (uid != null) {
+          DocumentReference userDoc = FirebaseFirestore.instance.collection('users').doc(uid);
+          DocumentSnapshot userSnapshot = await userDoc.get();
+          List<dynamic> dailySteps = userSnapshot.get('DailySteps') ?? [];
+
+          dailySteps.add({
+            'date': lastResetDate.toIso8601String(),
+            'steps': steps,
+            'coins': (steps / 3).toInt(),
+          });
+
+          await userDoc.update({
+            'DailySteps': dailySteps,
+            'CurrentDaySteps': 0,
+            'LastResetDate': now,
+            'Coins': FieldValue.increment((steps / 3).toInt()),
+          });
+
+          prefs.setInt('coinValue', (prefs.getInt('coinValue') ?? 0) + (steps / 3).toInt());
+          prefs.setInt('steps', 0);
+          prefs.setString('lastResetDate', now.toIso8601String());
+        }
+      } else {
+        String? uid = FirebaseAuth.instance.currentUser?.uid;
+        if (uid != null) {
+          await FirebaseFirestore.instance.collection('users').doc(uid).update({
+            'CurrentDaySteps': steps,
+            'CoinsEarnedToday': (steps / 3).toInt(),
+          });
+        }
+      }
+
+      return Future.value(true);
+    } catch (e) {
+      return Future.value(false);
+    }
+  });
+}
+
+Future<void> requestPermissions() async {
+  await [
+    Permission.activityRecognition,
+    Permission.sensors,
+  ].request();
+}
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   AdManager().updateRequestConfiguration();
   AdManager().initialize();
-  print('Firebase and AdManager initialized successfully');
+
+  await requestPermissions();
 
   SharedPreferences prefs = await SharedPreferences.getInstance();
   String theme = prefs.getString('theme') ?? 'light';
   ThemeData initialTheme = theme == 'dark' ? darkTheme : lightTheme;
 
   Workmanager().initialize(callbackDispatcher, isInDebugMode: true);
+  Workmanager().registerPeriodicTask(
+    "1",
+    "stepCounterTask",
+    frequency: Duration(minutes: 15), // Use a reasonable interval
+    initialDelay: Duration(seconds: 10),
+    constraints: Constraints(
+      networkType: NetworkType.not_required,
+      requiresBatteryNotLow: true,
+    ),
+  );
 
   runApp(
     ChangeNotifierProvider(
@@ -29,16 +103,6 @@ Future<void> main() async {
       child: MyApp(),
     ),
   );
-}
-
-void callbackDispatcher() {
-  Workmanager().executeTask((task, inputData) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    int steps = prefs.getInt('steps') ?? 0;
-    steps += 10; // Simulate step increment
-    prefs.setInt('steps', steps);
-    return Future.value(true);
-  });
 }
 
 class MyApp extends StatelessWidget {

@@ -1,7 +1,7 @@
 import 'dart:math';
 
 class StepCounter {
-  static const double stepThreshold = 13.5;
+  static const double stepThreshold = 14.5;
   static const int minTimeBetweenSteps = 250;
 
   double _previousAccMagnitude = 0.0;
@@ -10,10 +10,17 @@ class StepCounter {
   int _lastStepTime = 0;
 
   int get steps => _steps;
+  double x = 0.0;
+  double y = 0.0;
+  double z = 0.0;
 
   StepCounter([this._steps = 0]);
 
   void onAccelerometerEvent(double x, double y, double z) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+
     double accMagnitude = sqrt(x * x + y * y + z * z);
     int currentTime = DateTime.now().millisecondsSinceEpoch;
 
@@ -32,7 +39,7 @@ class StepCounter {
     _previousAccMagnitude = accMagnitude;
   }
 
-  void reset() {
+  void resetSteps() {
     _steps = 0;
     _lastStepTime = 0;
   }
