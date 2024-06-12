@@ -60,7 +60,7 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
     if (reviewDoc.exists && reviewDoc.data() != null) {
       if (mounted) {
         setState(() {
-          reviewCoinValue = reviewDoc.data()!['value'] ?? 500;
+          reviewCoinValue = reviewDoc.data()!['value'] ?? 0;
         });
       }
     }

@@ -25,7 +25,7 @@ class _InfoReviewState extends State<InfoReview> {
   Future<int> _fetchReviewCoinValue() async {
     final reviewDoc = await FirebaseFirestore.instance.collection('RewardRatio').doc('Review').get();
     if (reviewDoc.exists && reviewDoc.data() != null) {
-      return reviewDoc.data()!['value'] ?? 500;
+      return reviewDoc.data()!['value'] ?? 0;
     }
     return 500; // Default value if not found
   }

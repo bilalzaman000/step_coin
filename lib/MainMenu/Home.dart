@@ -24,11 +24,11 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   List<Map<String, dynamic>> _widgetsStatus = [];
   DateTime _lastResetDate = DateTime.now();
   late StreamSubscription<StepCount> _stepCountSubscription;
-  int _stepsDivider = 3;
-  int _adReward = 50;
-  int _reviewReward = 500;
-  int _gameReward = 77;
-  int _surveyReward = 77;
+  int _stepsDivider = 1;
+  int _adReward = 0;
+  int _reviewReward = 0;
+  int _gameReward = 0;
+  int _surveyReward = 0;
 
   @override
   void initState() {

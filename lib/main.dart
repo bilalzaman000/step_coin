@@ -26,7 +26,7 @@ void callbackDispatcher() {
 
       // Fetch the dynamic step coin ratio
       DocumentSnapshot rewardRatioSnapshot = await FirebaseFirestore.instance.collection('RewardRatio').doc('StepsDivider').get();
-      int stepCoinRatio = rewardRatioSnapshot.get('value') ?? 3; // Default to 3 if the value is not found
+      int stepCoinRatio = rewardRatioSnapshot.get('value') ?? 1; // Default to 3 if the value is not found
       print("object $stepCoinRatio");
       DateTime now = DateTime.now();
       DateTime lastResetDate = DateTime.parse(prefs.getString('lastResetDate') ?? now.toIso8601String());
