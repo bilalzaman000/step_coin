@@ -20,11 +20,13 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
   bool isLoading = true;
   bool isReviewedLoading = true;
   int totalRedeemedCoins = 0;
+  int reviewCoinValue = 500; // Default value
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    fetchReviewCoinValue();
     fetchApps().then((apps) {
       if (mounted) {
         setState(() {
@@ -51,6 +53,17 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
         }
       }
     });
+  }
+
+  Future<void> fetchReviewCoinValue() async {
+    final reviewDoc = await FirebaseFirestore.instance.collection('RewardRatio').doc('Review').get();
+    if (reviewDoc.exists && reviewDoc.data() != null) {
+      if (mounted) {
+        setState(() {
+          reviewCoinValue = reviewDoc.data()!['value'] ?? 500;
+        });
+      }
+    }
   }
 
   Future<void> filterReviewedApps() async {
@@ -175,7 +188,7 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
                   Image.asset('assets/Coin.png', width: 50, height: 50),
                   SizedBox(width: 8),
                   Text(
-                    _tabController.index == 0 ? '500' : '$totalRedeemedCoins',
+                    _tabController.index == 0 ? '$reviewCoinValue' : '$totalRedeemedCoins',
                     style: TextStyle(
                       color: isDarkTheme ? Colors.white : Colors.black,
                       fontSize: 50,
@@ -297,7 +310,7 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
                         game: Game(
                           name: app.appTitle,
                           imagePath: app.iconUrl,
-                          description: 'Please Download The App, Give 5 Star Rating, Write A Good Review, Submit the review And get 500 Coins As Rewards',
+                          description: 'Please Download The App, Give 5 Star Rating, Write A Good Review, Submit the review And get $reviewCoinValue Coins As Rewards',
                           appURL: app.appURL,
                           orderId: app.orderId,
                         ),

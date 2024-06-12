@@ -24,6 +24,11 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   List<Map<String, dynamic>> _widgetsStatus = [];
   DateTime _lastResetDate = DateTime.now();
   late StreamSubscription<StepCount> _stepCountSubscription;
+  int _stepsDivider = 3;
+  int _adReward = 50;
+  int _reviewReward = 500;
+  int _gameReward = 77;
+  int _surveyReward = 77;
 
   @override
   void initState() {
@@ -34,12 +39,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
 
     _stepsAnimation = Tween<double>(begin: 0, end: _steps.toDouble()).animate(_animationController);
-    _coinsAnimation = Tween<double>(begin: 0, end: (_steps / 3).toDouble()).animate(_animationController);
+    _coinsAnimation = Tween<double>(begin: 0, end: (_steps / _stepsDivider).toDouble()).animate(_animationController);
     _fetchCoinValueAndSteps().then((_) {
       _checkResetSteps();
       _initPedometer();
     });
     _fetchWidgetStatus();
+    _fetchRewardRatios();
     _animationController.forward();
   }
 
@@ -48,6 +54,26 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     _animationController.dispose();
     _stepCountSubscription.cancel();
     super.dispose();
+  }
+
+  Future<void> _fetchRewardRatios() async {
+    try {
+      DocumentSnapshot stepsDividerSnapshot = await FirebaseFirestore.instance.collection('RewardRatio').doc('StepsDivider').get();
+      DocumentSnapshot adSnapshot = await FirebaseFirestore.instance.collection('RewardRatio').doc('Ad').get();
+      DocumentSnapshot reviewSnapshot = await FirebaseFirestore.instance.collection('RewardRatio').doc('Review').get();
+      DocumentSnapshot gameSnapshot = await FirebaseFirestore.instance.collection('RewardRatio').doc('Game').get();
+      DocumentSnapshot surveySnapshot = await FirebaseFirestore.instance.collection('RewardRatio').doc('Survey').get();
+
+      setState(() {
+        _stepsDivider = stepsDividerSnapshot['value'];
+        _adReward = adSnapshot['value'];
+        _reviewReward = reviewSnapshot['value'];
+        _gameReward = gameSnapshot['value'];
+        _surveyReward = surveySnapshot['value'];
+      });
+    } catch (e) {
+      print('Error fetching reward ratios: $e');
+    }
   }
 
   Future<void> _fetchCoinValueAndSteps() async {
@@ -124,7 +150,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       if (snapshot.exists) {
         final now = DateTime.now();
         final currentSteps = _steps;
-        final currentCoins = (currentSteps / 3).toInt();
+        final currentCoins = (currentSteps / _stepsDivider).toInt();
 
         List<dynamic> dailySteps = snapshot['DailySteps'] ?? [];
 
@@ -180,7 +206,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
       if (snapshot.exists) {
         final int currentSteps = prefs.getInt('steps') ?? 0;
-        final int coinsEarnedToday = (currentSteps / 3).toInt();
+        final int coinsEarnedToday = (currentSteps / _stepsDivider).toInt();
         final DateTime now = DateTime.now();
 
         List<dynamic> dailySteps = snapshot['DailySteps'] ?? [];
@@ -302,7 +328,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                       children: [
                         Image.asset('assets/Coin.png', height: 24),
                         SizedBox(width: 8),
-                        Text('${(_steps / 3).toInt()}', style: TextStyle(fontSize: 18, color: theme.colorScheme.onSurface)),
+                        Text('${(_steps / _stepsDivider).toInt()}', style: TextStyle(fontSize: 18, color: theme.colorScheme.onSurface)),
                         SizedBox(width: 6),
                         Text('Earned Today', style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurface)),
                       ],
@@ -321,13 +347,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     .map((widget) {
                   switch (widget['name']) {
                     case 'Watch an ad':
-                      return _buildListItem('Watch an ad', 50, 'assets/Home/Video.png', context, null);
+                      return _buildListItem('Watch an ad', _adReward, 'assets/Home/Video.png', context, null);
                     case 'Give a Review':
-                      return _buildListItem('Give a Review', 500, 'assets/Home/Star.png', context, ReviewScreen());
+                      return _buildListItem('Give a Review', _reviewReward, 'assets/Home/Star.png', context, ReviewScreen());
                     case 'Submit A Survey':
-                      return _buildListItem('Submit A Survey', 77, 'assets/Home/Pen.png', context, null, true);
+                      return _buildListItem('Submit A Survey', _surveyReward, 'assets/Home/Pen.png', context, null, true);
                     case 'Play A Game':
-                      return _buildListItem('Play A Game', 77, 'assets/Home/Cube.png', context, null, true);
+                      return _buildListItem('Play A Game', _gameReward, 'assets/Home/Cube.png', context, null, true);
                     default:
                       return Container();
                   }

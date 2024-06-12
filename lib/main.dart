@@ -24,6 +24,10 @@ void callbackDispatcher() {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       int steps = prefs.getInt('steps') ?? 0;
 
+      // Fetch the dynamic step coin ratio
+      DocumentSnapshot rewardRatioSnapshot = await FirebaseFirestore.instance.collection('RewardRatio').doc('StepsDivider').get();
+      int stepCoinRatio = rewardRatioSnapshot.get('value') ?? 3; // Default to 3 if the value is not found
+      print("object $stepCoinRatio");
       DateTime now = DateTime.now();
       DateTime lastResetDate = DateTime.parse(prefs.getString('lastResetDate') ?? now.toIso8601String());
 
@@ -37,17 +41,17 @@ void callbackDispatcher() {
           dailySteps.add({
             'date': lastResetDate.toIso8601String(),
             'steps': steps,
-            'coins': (steps / 3).toInt(),
+            'coins': (steps / stepCoinRatio).toInt(),
           });
 
           await userDoc.update({
             'DailySteps': dailySteps,
             'CurrentDaySteps': 0,
             'LastResetDate': now,
-            'Coins': FieldValue.increment((steps / 3).toInt()),
+            'Coins': FieldValue.increment((steps / stepCoinRatio).toInt()),
           });
 
-          prefs.setInt('coinValue', (prefs.getInt('coinValue') ?? 0) + (steps / 3).toInt());
+          prefs.setInt('coinValue', (prefs.getInt('coinValue') ?? 0) + (steps / stepCoinRatio).toInt());
           prefs.setInt('steps', 0);
           prefs.setString('lastResetDate', now.toIso8601String());
           prefs.setInt('initialSteps', 0);
