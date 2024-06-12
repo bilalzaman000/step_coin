@@ -3,10 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pedometer/pedometer.dart';
 import '../adManager.dart';
 import 'Home/ReviewScreen.dart';
 import 'Home/StepsHistory.dart';
-import 'package:pedometer/pedometer.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -96,6 +96,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       _steps = event.steps - _initialSteps;
     });
     _saveStepsLocally();
+    _updateDatabaseWithSteps();
   }
 
   void _onStepCountError(error) {
@@ -115,49 +116,85 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   Future<void> _updateDatabaseWithSteps() async {
     String? uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
-      await FirebaseFirestore.instance.collection('users').doc(uid).update({
-        'CurrentDaySteps': _steps,
-        'CoinsEarnedToday': (_steps / 3).toInt(),
-      });
+      final userDoc = FirebaseFirestore.instance.collection('users').doc(uid);
+      final snapshot = await userDoc.get();
+      if (snapshot.exists) {
+        final now = DateTime.now();
+        final lastResetDate = (snapshot['LastResetDate'] as Timestamp).toDate();
+        final currentSteps = _steps;
+        final currentCoins = (currentSteps / 3).toInt();
+
+        if (now.difference(lastResetDate).inDays >= 1) {
+          final dailySteps = snapshot['DailySteps'] ?? [];
+          dailySteps.add({
+            'date': lastResetDate.toIso8601String(),
+            'steps': snapshot['CurrentDaySteps'],
+            'coins': snapshot['CoinsEarnedToday'],
+          });
+
+          await userDoc.update({
+            'DailySteps': dailySteps,
+            'LastResetDate': now,
+          });
+        }
+
+        await userDoc.update({
+          'CurrentDaySteps': currentSteps,
+          'CoinsEarnedToday': currentCoins,
+        });
+      }
+    }
+  }
+
+
+  Future<void> resetSteps() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? uid = FirebaseAuth.instance.currentUser?.uid;
+
+    if (uid != null) {
+      final DocumentReference userDoc = FirebaseFirestore.instance.collection('users').doc(uid);
+      final DocumentSnapshot snapshot = await userDoc.get();
+
+      if (snapshot.exists) {
+        final int currentSteps = prefs.getInt('steps') ?? 0;
+        final int coinsEarnedToday = (currentSteps / 3).toInt();
+        final DateTime now = DateTime.now();
+        final DateTime lastResetDate = DateTime.parse(prefs.getString('lastResetDate') ?? now.toIso8601String());
+
+        List<dynamic> dailySteps = snapshot['DailySteps'] ?? [];
+        dailySteps.add({
+          'date': lastResetDate.toIso8601String(),
+          'steps': currentSteps,
+          'coins': coinsEarnedToday,
+        });
+
+        await userDoc.update({
+          'DailySteps': dailySteps,
+          'CurrentDaySteps': 0,
+          'LastResetDate': now,
+          'Coins': FieldValue.increment(coinsEarnedToday),
+          'CoinsEarnedToday': 0,
+        });
+
+        prefs.setInt('coinValue', prefs.getInt('coinValue')! + coinsEarnedToday);
+        prefs.setInt('steps', 0);
+        prefs.setString('lastResetDate', now.toIso8601String());
+        prefs.setInt('initialSteps', 0); // Reset initial steps
+
+        setState(() {
+          _coinValue = prefs.getInt('coinValue')!;
+          _steps = 0;
+          _initialSteps = 0; // Reset initial steps
+          _lastResetDate = now;
+        });
+      }
     }
   }
 
   void _checkResetSteps() async {
     DateTime now = DateTime.now();
     if (now.difference(_lastResetDate).inDays >= 1) {
-      String? uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid != null) {
-        DocumentReference userDoc = FirebaseFirestore.instance.collection('users').doc(uid);
-        DocumentSnapshot snapshot = await userDoc.get();
-        if (snapshot.exists) {
-          List<dynamic> dailySteps = snapshot['DailySteps'] ?? [];
-          dailySteps.add({
-            'date': _lastResetDate.toIso8601String(),
-            'steps': _steps,
-            'coins': (_steps / 3).toInt(),
-          });
-          await userDoc.update({
-            'DailySteps': dailySteps,
-            'CurrentDaySteps': 0,
-            'LastResetDate': now,
-            'Coins': FieldValue.increment((_steps / 3).toInt()),
-            'CoinsEarnedToday': FieldValue.increment((_steps / 3).toInt()),
-          });
-
-          setState(() {
-            _steps = 0;
-            _lastResetDate = now;
-            _coinValue += (_steps / 3).toInt();
-            _initialSteps = 0; // Reset initial steps
-          });
-
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          prefs.setInt('coinValue', _coinValue);
-          prefs.setInt('steps', _steps);
-          prefs.setString('lastResetDate', _lastResetDate.toIso8601String());
-          prefs.setInt('initialSteps', _initialSteps);
-        }
-      }
+      await resetSteps();
     }
   }
 

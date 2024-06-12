@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import '../MainMenu.dart';
+import 'package:intl/intl.dart';
 import '../NewUser/CreateUser.dart';
 import '../reset/reset_email_screen.dart';
 import '../Theme/ThemeProvider.dart';
@@ -318,7 +319,13 @@ class _LoginScreenState extends State<LoginScreen> {
             'Ad_Coins': 0,
             'Redeemed_Coins': 0,
             'Cashed_Coins': 0,
-            'DailySteps': [], // Initialize as an empty list
+            'DailySteps': [
+              {
+                'date': DateFormat('yyyy-MM-dd').format(DateTime.now()), // Store the date as a string
+                'steps': 0, // Initialize steps as 0
+                'coins': 0, // Initialize coins as 0
+              }
+            ],// Initialize as an empty list
             'CurrentDaySteps': 0, // Initialize current day's steps as 0
             'LastResetDate': FieldValue.serverTimestamp(),
           });

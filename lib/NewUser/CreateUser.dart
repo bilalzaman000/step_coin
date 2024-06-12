@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-
+import 'package:intl/intl.dart';
 import '../MainMenu.dart';
 import '../welcomepage.dart';
 import 'PrivacyPolicy.dart';
@@ -263,7 +263,13 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
                           'Ad_Coins':0,
                           'Redeemed_Coins':0,
                           'Cashed_Coins':0,
-                          'DailySteps': [], // Initialize as an empty list
+                          'DailySteps': [
+                            {
+                              'date': DateFormat('yyyy-MM-dd').format(DateTime.now()), // Store the date as a string
+                              'steps': 0, // Initialize steps as 0
+                              'coins': 0, // Initialize coins as 0
+                            }
+                          ],// Initialize as an empty list
                           'CurrentDaySteps': 0, // Initialize current day's steps as 0
                           'LastResetDate': FieldValue.serverTimestamp(),
                         });
@@ -405,7 +411,13 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
             'Ad_Coins': 0,
             'Redeemed_Coins': 0,
             'Cashed_Coins': 0,
-            'DailySteps': [], // Initialize as an empty list
+            'DailySteps': [
+              {
+                'date': DateFormat('yyyy-MM-dd').format(DateTime.now()), // Store the date as a string
+                'steps': 0, // Initialize steps as 0
+                'coins': 0, // Initialize coins as 0
+              }
+            ],// Initialize as an empty list
             'CurrentDaySteps': 0, // Initialize current day's steps as 0
             'LastResetDate': FieldValue.serverTimestamp(),
           });
