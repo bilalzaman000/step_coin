@@ -112,7 +112,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setInt('steps', _steps);
   }
-
   Future<void> _updateDatabaseWithSteps() async {
     String? uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
@@ -120,25 +119,45 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       final snapshot = await userDoc.get();
       if (snapshot.exists) {
         final now = DateTime.now();
-        final lastResetDate = (snapshot['LastResetDate'] as Timestamp).toDate();
         final currentSteps = _steps;
         final currentCoins = (currentSteps / 3).toInt();
 
-        if (now.difference(lastResetDate).inDays >= 1) {
-          final dailySteps = snapshot['DailySteps'] ?? [];
-          dailySteps.add({
-            'date': lastResetDate.toIso8601String(),
-            'steps': snapshot['CurrentDaySteps'],
-            'coins': snapshot['CoinsEarnedToday'],
-          });
+        // Fetch existing daily steps
+        List<dynamic> dailySteps = snapshot['DailySteps'] ?? [];
 
-          await userDoc.update({
-            'DailySteps': dailySteps,
-            'LastResetDate': now,
+        // Check if there's an entry for today
+        bool todayEntryExists = false;
+        for (var entry in dailySteps) {
+          DateTime entryDate;
+          if (entry['date'] is Timestamp) {
+            entryDate = (entry['date'] as Timestamp).toDate();
+          } else if (entry['date'] is String) {
+            entryDate = DateTime.parse(entry['date']);
+          } else {
+            continue; // Skip entries with invalid date types
+          }
+
+          if (entryDate.day == now.day &&
+              entryDate.month == now.month &&
+              entryDate.year == now.year) {
+            entry['steps'] = currentSteps;
+            entry['coins'] = currentCoins;
+            todayEntryExists = true;
+            break;
+          }
+        }
+
+        // If no entry for today, add a new one
+        if (!todayEntryExists) {
+          dailySteps.add({
+            'date': now,
+            'steps': currentSteps,
+            'coins': currentCoins,
           });
         }
 
         await userDoc.update({
+          'DailySteps': dailySteps,
           'CurrentDaySteps': currentSteps,
           'CoinsEarnedToday': currentCoins,
         });
