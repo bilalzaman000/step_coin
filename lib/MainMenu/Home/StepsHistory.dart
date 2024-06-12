@@ -14,6 +14,8 @@ class _StepsHistoryState extends State<StepsHistory> {
   List<Map<String, dynamic>> _stepHistory = [];
   int _currentSteps = 0;
   int _currentCoins = 0;
+  String _selectedDaySteps = '';
+  String _selectedDayCoins = '';
 
   @override
   void initState() {
@@ -67,6 +69,12 @@ class _StepsHistoryState extends State<StepsHistory> {
           _stepHistory = filteredSteps.reversed.toList();
           _currentSteps = prefs.getInt('steps') ?? 0;
           _currentCoins = (_currentSteps / 3).toInt();
+
+          // Default to current day
+          if (_stepHistory.isNotEmpty) {
+            _selectedDaySteps = _stepHistory[0]['steps'].toString();
+            _selectedDayCoins = _stepHistory[0]['coins'].toString();
+          }
         });
       }
     }
@@ -88,51 +96,47 @@ class _StepsHistoryState extends State<StepsHistory> {
         padding: const EdgeInsets.all(12.0),
         child: Column(
           children: [
-            Container(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(30),
-              ),
-              padding: EdgeInsets.all(2.0),
-              height: MediaQuery.of(context).size.height * 0.25,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text('Today Steps', style: TextStyle(fontSize: 18, color: theme.colorScheme.onSurface)),
-                  SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Image.asset('assets/Home/Steps.png', height: 50),
-                      SizedBox(width: 8),
-                      Text('$_currentSteps', style: TextStyle(fontSize: 50, color: theme.colorScheme.onSurface)),
-                    ],
-                  ),
-                  SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Image.asset('assets/Coin.png', height: 24),
-                      SizedBox(width: 8),
-                      Text('$_currentCoins', style: TextStyle(fontSize: 18, color: theme.colorScheme.onSurface)),
-                      SizedBox(width: 6),
-                      Text('Earned Today', style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurface)),
-                    ],
-                  ),
-                ],
-              ),
-            ),
             Expanded(
-              child: Column(
-                children: [
-                  SizedBox(height: 100),
-                  Text('Graphical View Of Earned Coins', style: TextStyle(fontSize: 18, color: theme.colorScheme.onSurface)),
-                  Expanded(child: _buildBarChart()),
-                  SizedBox(height: 20,),
-                ],
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: _buildBarChart(),
               ),
             ),
+            if (_selectedDaySteps.isNotEmpty && _selectedDayCoins.isNotEmpty)
+              Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                padding: EdgeInsets.all(20.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text('Steps and Coins', style: TextStyle(fontSize: 18, color: theme.colorScheme.onSurface)),
+                    SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset('assets/Home/Steps.png', height: 50),
+                        SizedBox(width: 8),
+                        Text(_selectedDaySteps, style: TextStyle(fontSize: 50, color: theme.colorScheme.onSurface)),
+                      ],
+                    ),
+                    SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset('assets/Coin.png', height: 24),
+                        SizedBox(width: 8),
+                        Text(_selectedDayCoins, style: TextStyle(fontSize: 18, color: theme.colorScheme.onSurface)),
+                        SizedBox(width: 6),
+                        Text('Earned Today', style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurface)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
@@ -143,125 +147,111 @@ class _StepsHistoryState extends State<StepsHistory> {
     double maxY = _stepHistory.isNotEmpty
         ? (_stepHistory.map((e) => e['steps']).reduce((a, b) => a > b ? a : b) + 50).toDouble()
         : 10;
+    double minY = 50; // Set the minimum Y value to lift the bars above the x-axis
 
     return Container(
-      color: Theme.of(context).colorScheme.surface, // Match the background color
-      child: Stack(
-        children: [
-          BarChart(
-            BarChartData(
-              alignment: BarChartAlignment.spaceAround,
-              maxY: maxY,
-              barTouchData: BarTouchData(
-                touchTooltipData: BarTouchTooltipData(
-                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                    final index = group.x.toInt();
-                    if (index >= 0 && index < _stepHistory.length) {
-                      final entry = _stepHistory[index];
-                    }
-                    return null;
-                  },
-                ),
-              ),
-              titlesData: FlTitlesData(
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 30,
-                    getTitlesWidget: (value, meta) {
-                      return Text('${value.toInt()}', style: const TextStyle(color: Colors.white, fontSize: 10));
-                    },
-                  ),
-                ),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      final index = value.toInt();
-                      if (index >= 0 && index < _stepHistory.length) {
-                        final date = _stepHistory[index]['date'];
-                        return Text(DateFormat('E').format(date), style: const TextStyle(color: Colors.white, fontSize: 10));
-                      }
-                      return Text('');
-                    },
-                  ),
-                ),
-                topTitles: AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                rightTitles: AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-              ),
-              borderData: FlBorderData(show: false),
-              gridData: FlGridData(show: false), // Hides the grid background
-              barGroups: _stepHistory.asMap().entries.map((entry) {
-                final index = entry.key;
-                final data = entry.value;
-                final isCurrentDay = index == 0; // The last bar is the current day in reversed list
-                return BarChartGroupData(
-                  x: index,
-                  barRods: [
-                    BarChartRodData(
-                      toY: data['steps'].toDouble(),
-                      gradient: LinearGradient(
-                        colors: isCurrentDay
-                            ? [Colors.yellow, Colors.orange]
-                            : [Colors.blue, Colors.lightBlueAccent],
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                      ),
-                      width: 22,
-                      borderRadius: BorderRadius.circular(4),
-                      backDrawRodData: BackgroundBarChartRodData(
-                        show: true,
-                        toY: 0,
-                        color: Colors.transparent,
-                      ),
-                    ),
-                  ],
-                  showingTooltipIndicators: [0],
-                  barsSpace: 8,
-                );
-              }).toList(),
-            ),
-          ),
-          Positioned.fill(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return Stack(
-                  children: _stepHistory.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final data = entry.value;
-                    final barX = (index + 1) * (constraints.maxWidth / (_stepHistory.length + 1));
-                    final barHeight = (data['steps'] / maxY) * constraints.maxHeight;
-                    final barY = constraints.maxHeight - barHeight;
-
-                    return Positioned(
-                      left: barX - 12, // Align the label horizontally
-                      top: barY - 12,  // Align the label vertically just above the bar
-                      child: Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: Colors.yellow,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.black, width: 2),
-                        ),
-                        child: Center(
-                          child: Text(
-                            '${data['coins']}',
-                            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12),
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                );
+      height: MediaQuery.of(context).size.height * 0.35, // Adjusted to make the bar chart smaller
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: BarChart(
+        BarChartData(
+          alignment: BarChartAlignment.spaceAround,
+          minY: minY,
+          maxY: maxY,
+          barTouchData: BarTouchData(
+            touchCallback: (FlTouchEvent event, barTouchResponse) {
+              if (event.isInterestedForInteractions &&
+                  barTouchResponse != null &&
+                  barTouchResponse.spot != null) {
+                final touchedIndex = barTouchResponse.spot!.touchedBarGroupIndex;
+                final steps = _stepHistory[touchedIndex]['steps'].toString();
+                final coins = _stepHistory[touchedIndex]['coins'].toString();
+                setState(() {
+                  _selectedDaySteps = steps;
+                  _selectedDayCoins = coins;
+                });
+              }
+            },
+            touchTooltipData: BarTouchTooltipData(
+              getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                final index = group.x.toInt();
+                if (index >= 0 && index < _stepHistory.length) {
+                  final entry = _stepHistory[index];
+                }
+                return null;
               },
             ),
           ),
-        ],
+          titlesData: FlTitlesData(
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (value, meta) {
+                  final index = value.toInt();
+                  if (index >= 0 && index < _stepHistory.length) {
+                    final date = _stepHistory[index]['date'];
+                    return Column(
+                      children: [
+                        Text(DateFormat('E').format(date), style: TextStyle(color: Colors.white, fontSize: 14)),
+                        SizedBox(height: 4),
+                      ],
+                    );
+                  }
+                  return Text('');
+                },
+              ),
+            ),
+            topTitles: AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            rightTitles: AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+          ),
+          borderData: FlBorderData(
+            show: true,
+            border: Border(
+              bottom: BorderSide(
+                color: Colors.white,
+                width: 2,
+              ),
+            ),
+          ),
+          gridData: FlGridData(show: false),
+          barGroups: _stepHistory.asMap().entries.map((entry) {
+            final index = entry.key;
+            final data = entry.value;
+            final isCurrentDay = index == 0; // The last bar is the current day in reversed list
+            return BarChartGroupData(
+              x: index,
+              barRods: [
+                BarChartRodData(
+                  toY: data['steps'].toDouble() + minY,
+                  gradient: LinearGradient(
+                    colors: isCurrentDay
+                        ? [Colors.orange, Colors.yellow]
+                        : [Colors.lightBlueAccent, Colors.purple],
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                  ),
+                  width: 25,
+                  borderRadius: BorderRadius.circular(200), // Fully rounded bars
+                  backDrawRodData: BackgroundBarChartRodData(
+                    show: true,
+                    toY: minY,
+                    color: Colors.transparent,
+                  ),
+                ),
+              ],
+              showingTooltipIndicators: [0],
+            );
+          }).toList(),
+        ),
       ),
     );
   }
