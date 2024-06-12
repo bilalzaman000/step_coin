@@ -127,6 +127,7 @@ class _StepsHistoryState extends State<StepsHistory> {
               child: Column(
                 children: [
                   SizedBox(height: 100),
+                  Text('Graphical View Of Earned Coins', style: TextStyle(fontSize: 18, color: theme.colorScheme.onSurface)),
                   Expanded(child: _buildBarChart()),
                   SizedBox(height: 20,),
                 ],
@@ -139,6 +140,10 @@ class _StepsHistoryState extends State<StepsHistory> {
   }
 
   Widget _buildBarChart() {
+    double maxY = _stepHistory.isNotEmpty
+        ? (_stepHistory.map((e) => e['steps']).reduce((a, b) => a > b ? a : b) + 50).toDouble()
+        : 10;
+
     return Container(
       color: Theme.of(context).colorScheme.surface, // Match the background color
       child: Stack(
@@ -146,10 +151,16 @@ class _StepsHistoryState extends State<StepsHistory> {
           BarChart(
             BarChartData(
               alignment: BarChartAlignment.spaceAround,
-              maxY: _stepHistory.isNotEmpty ? _stepHistory.map((e) => e['steps']).reduce((a, b) => a > b ? a : b).toDouble() : 10,
+              maxY: maxY,
               barTouchData: BarTouchData(
                 touchTooltipData: BarTouchTooltipData(
-                  getTooltipItem: (group, groupIndex, rod, rodIndex) => null,
+                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                    final index = group.x.toInt();
+                    if (index >= 0 && index < _stepHistory.length) {
+                      final entry = _stepHistory[index];
+                    }
+                    return null;
+                  },
                 ),
               ),
               titlesData: FlTitlesData(
@@ -187,14 +198,15 @@ class _StepsHistoryState extends State<StepsHistory> {
               barGroups: _stepHistory.asMap().entries.map((entry) {
                 final index = entry.key;
                 final data = entry.value;
+                final isCurrentDay = index == 0; // The last bar is the current day in reversed list
                 return BarChartGroupData(
                   x: index,
                   barRods: [
                     BarChartRodData(
                       toY: data['steps'].toDouble(),
                       gradient: LinearGradient(
-                        colors: index == _stepHistory.length - 1
-                            ? [Colors.orange, Colors.yellow]
+                        colors: isCurrentDay
+                            ? [Colors.yellow, Colors.orange]
                             : [Colors.blue, Colors.lightBlueAccent],
                         begin: Alignment.bottomCenter,
                         end: Alignment.topCenter,
@@ -208,7 +220,7 @@ class _StepsHistoryState extends State<StepsHistory> {
                       ),
                     ),
                   ],
-                  showingTooltipIndicators: [],
+                  showingTooltipIndicators: [0],
                   barsSpace: 8,
                 );
               }).toList(),
@@ -222,20 +234,25 @@ class _StepsHistoryState extends State<StepsHistory> {
                     final index = entry.key;
                     final data = entry.value;
                     final barX = (index + 1) * (constraints.maxWidth / (_stepHistory.length + 1));
-                    final barY = constraints.maxHeight - (data['steps'] / _stepHistory.map((e) => e['steps']).reduce((a, b) => a > b ? a : b)) * constraints.maxHeight;
+                    final barHeight = (data['steps'] / maxY) * constraints.maxHeight;
+                    final barY = constraints.maxHeight - barHeight;
 
                     return Positioned(
-                      left: barX - 11, // Align the label horizontally
-                      top: barY - 30,  // Align the label vertically
+                      left: barX - 12, // Align the label horizontally
+                      top: barY - 12,  // Align the label vertically just above the bar
                       child: Container(
-                        padding: EdgeInsets.all(4),
+                        width: 24,
+                        height: 24,
                         decoration: BoxDecoration(
                           color: Colors.yellow,
-                          borderRadius: BorderRadius.circular(12),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.black, width: 2),
                         ),
-                        child: Text(
-                          '${data['coins']}',
-                          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12),
+                        child: Center(
+                          child: Text(
+                            '${data['coins']}',
+                            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12),
+                          ),
                         ),
                       ),
                     );
