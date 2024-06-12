@@ -66,6 +66,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               : (snapshot['LastResetDate'] as Timestamp).toDate();
           _initialSteps = prefs.getInt('initialSteps') ?? 0;
         });
+        await _updateDatabaseWithSteps();
       } else {
         print('Document does not exist');
       }
@@ -211,14 +212,12 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     }
   }
 
-
   void _checkResetSteps() {
     final DateTime now = DateTime.now();
     if (now.difference(_lastResetDate).inDays >= 1) {
       resetSteps();
     }
   }
-
 
   void _showComingSoonDialog() {
     showDialog(
@@ -271,7 +270,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           children: [
             GestureDetector(
               onTap: () async {
-                await _updateDatabaseWithSteps();
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => StepsHistory()),
@@ -349,11 +347,16 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       child: ListTile(
         onTap: () async {
           if (title == 'Watch an ad') {
-            AdManager().showRewardedAd(context);
+            AdManager().showRewardedAd(context, () async {
+              // Update coins instantly after the ad is completed
+              setState(() {
+                _TcoinValue += coins;
+              });
+
+            });
           } else if (showComingSoon) {
             _showComingSoonDialog();
           } else if (nextScreen != null) {
-            await _updateDatabaseWithSteps();
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => nextScreen),
@@ -382,4 +385,5 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       ),
     );
   }
+
 }

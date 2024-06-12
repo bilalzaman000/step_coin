@@ -36,8 +36,7 @@ class AdManager {
       ),
     );
   }
-
-  void showRewardedAd(BuildContext context) {
+  void showRewardedAd(BuildContext context, VoidCallback onAdCompleted) {
     if (_isRewardedAdReady) {
       _rewardedAd.fullScreenContentCallback = FullScreenContentCallback(
         onAdShowedFullScreenContent: (ad) {
@@ -57,6 +56,7 @@ class AdManager {
       _rewardedAd.show(onUserEarnedReward: (ad, reward) async {
         print('User earned reward: $reward');
         await _handleReward(context);
+        onAdCompleted(); // Call the callback after the ad is completed
       });
 
       _isRewardedAdReady = false;
@@ -64,6 +64,9 @@ class AdManager {
       print('RewardedAd is not ready.');
     }
   }
+
+
+
 
   Future<void> _handleReward(BuildContext context) async {
     User? user = FirebaseAuth.instance.currentUser;
