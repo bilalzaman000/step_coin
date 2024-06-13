@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 final ThemeData lightTheme = ThemeData(
   brightness: Brightness.light,
-  primarySwatch: Colors.blue,
+  primarySwatch: Colors.grey,
   scaffoldBackgroundColor: Colors.white,
   textTheme: TextTheme(
     bodyLarge: TextStyle(color: Colors.black),

@@ -142,12 +142,12 @@ class _StepsHistoryState extends State<StepsHistory> {
       ),
     );
   }
-
   Widget _buildBarChart() {
     double maxY = _stepHistory.isNotEmpty
         ? (_stepHistory.map((e) => e['steps']).reduce((a, b) => a > b ? a : b) + 50).toDouble()
         : 10;
-    double minY = 50; // Set the minimum Y value to lift the bars above the x-axis
+    double minY = 0; // Set the minimum Y value to lift the bars above the x-axis
+    double paddingBelowAxis = 30; // Additional padding below the chart
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.35, // Adjusted to make the bar chart smaller
@@ -155,104 +155,108 @@ class _StepsHistoryState extends State<StepsHistory> {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(30),
       ),
-      child: BarChart(
-        BarChartData(
-          alignment: BarChartAlignment.spaceAround,
-          minY: minY,
-          maxY: maxY,
-          barTouchData: BarTouchData(
-            touchCallback: (FlTouchEvent event, barTouchResponse) {
-              if (event.isInterestedForInteractions &&
-                  barTouchResponse != null &&
-                  barTouchResponse.spot != null) {
-                final touchedIndex = barTouchResponse.spot!.touchedBarGroupIndex;
-                final steps = _stepHistory[touchedIndex]['steps'].toString();
-                final coins = _stepHistory[touchedIndex]['coins'].toString();
-                setState(() {
-                  _selectedDaySteps = steps;
-                  _selectedDayCoins = coins;
-                });
-              }
-            },
-            touchTooltipData: BarTouchTooltipData(
-              getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                final index = group.x.toInt();
-                if (index >= 0 && index < _stepHistory.length) {
-                  final entry = _stepHistory[index];
+      child: Padding(
+        padding: EdgeInsets.only(bottom: paddingBelowAxis), // Add padding below the chart
+        child: BarChart(
+          BarChartData(
+            alignment: BarChartAlignment.spaceAround,
+            minY: minY,
+            maxY: maxY,
+            barTouchData: BarTouchData(
+              touchCallback: (FlTouchEvent event, barTouchResponse) {
+                if (event.isInterestedForInteractions &&
+                    barTouchResponse != null &&
+                    barTouchResponse.spot != null) {
+                  final touchedIndex = barTouchResponse.spot!.touchedBarGroupIndex;
+                  final steps = _stepHistory[touchedIndex]['steps'].toString();
+                  final coins = _stepHistory[touchedIndex]['coins'].toString();
+                  setState(() {
+                    _selectedDaySteps = steps;
+                    _selectedDayCoins = coins;
+                  });
                 }
-                return null;
               },
-            ),
-          ),
-          titlesData: FlTitlesData(
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                getTitlesWidget: (value, meta) {
-                  final index = value.toInt();
+              touchTooltipData: BarTouchTooltipData(
+                getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                  final index = group.x.toInt();
                   if (index >= 0 && index < _stepHistory.length) {
-                    final date = _stepHistory[index]['date'];
-                    return Column(
-                      children: [
-                        Text(DateFormat('E').format(date), style: TextStyle(color: Colors.white, fontSize: 14)),
-                        SizedBox(height: 4),
-                      ],
-                    );
+                    final entry = _stepHistory[index];
                   }
-                  return Text('');
+                  return null;
                 },
               ),
             ),
-            topTitles: AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            rightTitles: AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-          ),
-          borderData: FlBorderData(
-            show: true,
-            border: Border(
-              bottom: BorderSide(
-                color: Colors.white,
-                width: 2,
+            titlesData: FlTitlesData(
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  getTitlesWidget: (value, meta) {
+                    final index = value.toInt();
+                    if (index >= 0 && index < _stepHistory.length) {
+                      final date = _stepHistory[index]['date'];
+                      return Column(
+                        children: [
+                          Text(DateFormat('E').format(date), style: TextStyle(color: Colors.white, fontSize: 14)),
+                          SizedBox(height: 4),
+                        ],
+                      );
+                    }
+                    return Text('');
+                  },
+                ),
+              ),
+              topTitles: AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              rightTitles: AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
               ),
             ),
-          ),
-          gridData: FlGridData(show: false),
-          barGroups: _stepHistory.asMap().entries.map((entry) {
-            final index = entry.key;
-            final data = entry.value;
-            final isCurrentDay = index == 0; // The last bar is the current day in reversed list
-            return BarChartGroupData(
-              x: index,
-              barRods: [
-                BarChartRodData(
-                  toY: data['steps'].toDouble() + minY,
-                  gradient: LinearGradient(
-                    colors: isCurrentDay
-                        ? [Colors.orange, Colors.yellow]
-                        : [Colors.lightBlueAccent, Colors.purple],
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                  ),
-                  width: 25,
-                  borderRadius: BorderRadius.circular(200), // Fully rounded bars
-                  backDrawRodData: BackgroundBarChartRodData(
-                    show: true,
-                    toY: minY,
-                    color: Colors.transparent,
-                  ),
+            borderData: FlBorderData(
+              show: true,
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.white,
+                  width: 2,
                 ),
-              ],
-              showingTooltipIndicators: [0],
-            );
-          }).toList(),
+              ),
+            ),
+            gridData: FlGridData(show: false),
+            barGroups: _stepHistory.asMap().entries.map((entry) {
+              final index = entry.key;
+              final data = entry.value;
+              final isCurrentDay = index == 0; // The last bar is the current day in reversed list
+              return BarChartGroupData(
+                x: index,
+                barRods: [
+                  BarChartRodData(
+                    toY: data['steps'].toDouble(),
+                    gradient: LinearGradient(
+                      colors: isCurrentDay
+                          ? [Colors.orange, Colors.yellow]
+                          : [Colors.lightBlueAccent, Colors.purple],
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                    ),
+                    width: 25,
+                    borderRadius: BorderRadius.circular(200), // Fully rounded bars
+                    backDrawRodData: BackgroundBarChartRodData(
+                      show: true,
+                      toY: minY,
+                      color: Colors.transparent,
+                    ),
+                  ),
+                ],
+                showingTooltipIndicators: [0],
+              );
+            }).toList(),
+          ),
         ),
       ),
     );
   }
+
 }

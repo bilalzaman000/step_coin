@@ -26,35 +26,45 @@ void callbackDispatcher() {
 
       // Fetch the dynamic step coin ratio
       DocumentSnapshot rewardRatioSnapshot = await FirebaseFirestore.instance.collection('RewardRatio').doc('StepsDivider').get();
-      int stepCoinRatio = rewardRatioSnapshot.get('value') ?? 1; // Default to 3 if the value is not found
-      print("object $stepCoinRatio");
+      int stepCoinRatio = rewardRatioSnapshot.get('value') ?? 1; // Default to 1 if the value is not found
+      print("Step coin ratio: $stepCoinRatio");
+
       DateTime now = DateTime.now();
       DateTime lastResetDate = DateTime.parse(prefs.getString('lastResetDate') ?? now.toIso8601String());
 
-      if (now.difference(lastResetDate).inDays >= 1) {
+      // Check if the current day already has an entry
+      if (now.day != lastResetDate.day || now.month != lastResetDate.month || now.year != lastResetDate.year) {
         String? uid = FirebaseAuth.instance.currentUser?.uid;
         if (uid != null) {
           DocumentReference userDoc = FirebaseFirestore.instance.collection('users').doc(uid);
           DocumentSnapshot userSnapshot = await userDoc.get();
           List<dynamic> dailySteps = userSnapshot.get('DailySteps') ?? [];
 
-          dailySteps.add({
-            'date': lastResetDate.toIso8601String(),
-            'steps': steps,
-            'coins': (steps / stepCoinRatio).toInt(),
+          // Check if there's already an entry for today
+          bool alreadyExists = dailySteps.any((entry) {
+            DateTime entryDate = DateTime.parse(entry['date']);
+            return entryDate.day == now.day && entryDate.month == now.month && entryDate.year == now.year;
           });
 
-          await userDoc.update({
-            'DailySteps': dailySteps,
-            'CurrentDaySteps': 0,
-            'LastResetDate': now,
-            'Coins': FieldValue.increment((steps / stepCoinRatio).toInt()),
-          });
+          if (!alreadyExists) {
+            dailySteps.add({
+              'date': lastResetDate.toIso8601String(),
+              'steps': steps,
+              'coins': (steps / stepCoinRatio).toInt(),
+            });
 
-          prefs.setInt('coinValue', (prefs.getInt('coinValue') ?? 0) + (steps / stepCoinRatio).toInt());
-          prefs.setInt('steps', 0);
-          prefs.setString('lastResetDate', now.toIso8601String());
-          prefs.setInt('initialSteps', 0);
+            await userDoc.update({
+              'DailySteps': dailySteps,
+              'CurrentDaySteps': 0,
+              'LastResetDate': now,
+              'Coins': FieldValue.increment((steps / stepCoinRatio).toInt()),
+            });
+
+            prefs.setInt('coinValue', (prefs.getInt('coinValue') ?? 0) + (steps / stepCoinRatio).toInt());
+            prefs.setInt('steps', 0);
+            prefs.setString('lastResetDate', now.toIso8601String());
+            prefs.setInt('initialSteps', 0);
+          }
         }
       }
 
@@ -91,7 +101,7 @@ void main() async {
   Workmanager().registerPeriodicTask(
     "1",
     "stepCounterTask",
-    frequency: Duration(minutes: 15), // Use a reasonable interval
+    frequency: Duration(hours: 24), // Schedule to run daily
     initialDelay: Duration(seconds: 10),
     constraints: Constraints(
       networkType: NetworkType.not_required,
@@ -106,6 +116,7 @@ void main() async {
     ),
   );
 }
+
 
 class MyApp extends StatelessWidget {
   @override

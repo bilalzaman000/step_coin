@@ -189,9 +189,11 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           'CoinsEarnedToday': currentCoins,
         });
 
-        setState(() {
-          _coinValue = currentCoins;
-        });
+        if (mounted) {
+          setState(() {
+            _coinValue = currentCoins;
+          });
+        }
       }
     }
   }
