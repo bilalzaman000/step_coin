@@ -34,10 +34,22 @@ class _InfoReviewState extends State<InfoReview> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
-
+    final isDarkTheme = theme.brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
-        title: Text('Review Info'),
+        backgroundColor: isDarkTheme ? theme.appBarTheme.backgroundColor : Colors.white, // Set to white in light mode
+        elevation: 0,
+        centerTitle: true,
+        title: Text(
+          'Review Status',
+          style: theme.appBarTheme.titleTextStyle,
+        ),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: theme.iconTheme.color),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
       ),
       body: FutureBuilder<int>(
         future: _reviewCoinValueFuture,

@@ -11,11 +11,13 @@ class AccountPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final theme = Theme.of(context);
+    Color appBarColor = themeProvider.getTheme().brightness == Brightness.light ? Colors.white : Colors.black;
 
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
         title: Text('Account'),
+        backgroundColor: appBarColor,
       ),
       body: ListView(
         children: [
@@ -49,8 +51,10 @@ class AccountPage extends StatelessWidget {
 
   Widget _buildListItem(BuildContext context, String title, IconData leadingIcon, IconData trailingIcon, Widget nextScreen, ThemeProvider themeProvider) {
     final theme = Theme.of(context);
+    Color cardColor = theme.brightness == Brightness.light ? Color(0xFFFAFAFB) : theme.colorScheme.surface;
 
     return Card(
+      color: cardColor,
       margin: EdgeInsets.symmetric(vertical: 8.0),
       child: ListTile(
         leading: CircleAvatar(
@@ -75,8 +79,10 @@ class AccountPage extends StatelessWidget {
 
   Widget _buildListItemWithToggle(BuildContext context, String title, IconData leadingIcon, ThemeProvider themeProvider) {
     final theme = Theme.of(context);
+    Color cardColor = theme.brightness == Brightness.light ? Color(0xFFFAFAFB) : theme.colorScheme.surface;
 
     return Card(
+      color: cardColor,
       margin: EdgeInsets.symmetric(vertical: 8.0),
       child: ListTile(
         leading: CircleAvatar(
@@ -111,8 +117,10 @@ class AccountPage extends StatelessWidget {
 
   Widget _buildLogoutItem(BuildContext context, ThemeProvider themeProvider) {
     final theme = Theme.of(context);
+    Color cardColor = theme.brightness == Brightness.light ? Color(0xFFFAFAFB) : theme.colorScheme.surface;
 
     return Card(
+      color: cardColor,
       margin: EdgeInsets.symmetric(vertical: 8.0),
       child: ListTile(
         leading: CircleAvatar(

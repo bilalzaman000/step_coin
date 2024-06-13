@@ -13,11 +13,11 @@ class AppPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
-
+    final isDarkTheme = theme.brightness == Brightness.dark;
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: theme.appBarTheme.backgroundColor,
+        backgroundColor: isDarkTheme ? theme.appBarTheme.backgroundColor : Colors.white, // Set to white in light mode
         elevation: 0,
         centerTitle: true,
         title: Text(

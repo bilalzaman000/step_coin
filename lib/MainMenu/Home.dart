@@ -272,10 +272,12 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     Color appBarColor = theme.brightness == Brightness.light ? Colors.white : Colors.black;
+    Color containerColor = theme.brightness == Brightness.light ? Color(0xFFFAFAFB) : theme.colorScheme.surface;
+
     return Scaffold(
       backgroundColor: appBarColor,
       appBar: AppBar(
-        backgroundColor: theme.brightness == Brightness.light ? Colors.white : Colors.black,
+        backgroundColor: appBarColor,
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -305,7 +307,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               },
               child: Container(
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
+                  color: containerColor,
                   borderRadius: BorderRadius.circular(30),
                 ),
                 padding: EdgeInsets.all(2.0),
@@ -369,8 +371,11 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
   Widget _buildListItem(String title, int coins, String imagePath, BuildContext context, Widget? nextScreen, [bool showComingSoon = false]) {
+    final theme = Theme.of(context);
+    Color tileColor = theme.brightness == Brightness.light ? Color(0xFFFAFAFB) : theme.colorScheme.surface;
+
     return Card(
-      color: Theme.of(context).colorScheme.surface,
+      color: tileColor,
       margin: EdgeInsets.symmetric(vertical: 8.0),
       child: ListTile(
         onTap: () async {
@@ -380,7 +385,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               setState(() {
                 _TcoinValue += coins;
               });
-
             });
           } else if (showComingSoon) {
             _showComingSoonDialog();
@@ -397,7 +401,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         ),
         title: Text(
           title,
-          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+          style: TextStyle(color: theme.colorScheme.onSurface),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -406,12 +410,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             SizedBox(width: 8),
             Text(
               '$coins',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 24),
+              style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 24),
             ),
           ],
         ),
       ),
     );
   }
+
 
 }

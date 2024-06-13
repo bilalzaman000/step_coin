@@ -83,13 +83,14 @@ class _StepsHistoryState extends State<StepsHistory> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final bool isLightTheme = theme.brightness == Brightness.light;
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: isLightTheme ? Colors.white : Colors.black,
         automaticallyImplyLeading: false, // hides the back button
         title: Center(
-          child: Text('Step History', style: TextStyle(color: Colors.white)),
+          child: Text('Step History', style: TextStyle(color: isLightTheme ? Colors.black : Colors.white)),
         ),
       ),
       body: Padding(
@@ -99,13 +100,13 @@ class _StepsHistoryState extends State<StepsHistory> {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
-                child: _buildBarChart(),
+                child: _buildBarChart(isLightTheme),
               ),
             ),
             if (_selectedDaySteps.isNotEmpty && _selectedDayCoins.isNotEmpty)
               Container(
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
+                  color: isLightTheme ? Color(0xFFFAFAFB) : theme.colorScheme.surface,
                   borderRadius: BorderRadius.circular(30),
                 ),
                 padding: EdgeInsets.all(20.0),
@@ -142,7 +143,8 @@ class _StepsHistoryState extends State<StepsHistory> {
       ),
     );
   }
-  Widget _buildBarChart() {
+
+  Widget _buildBarChart(bool isLightTheme) {
     double maxY = _stepHistory.isNotEmpty
         ? (_stepHistory.map((e) => e['steps']).reduce((a, b) => a > b ? a : b) + 50).toDouble()
         : 10;
@@ -152,7 +154,7 @@ class _StepsHistoryState extends State<StepsHistory> {
     return Container(
       height: MediaQuery.of(context).size.height * 0.35, // Adjusted to make the bar chart smaller
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: isLightTheme ? Color(0xFFFAFAFB) : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(30),
       ),
       child: Padding(
@@ -199,7 +201,7 @@ class _StepsHistoryState extends State<StepsHistory> {
                       final date = _stepHistory[index]['date'];
                       return Column(
                         children: [
-                          Text(DateFormat('E').format(date), style: TextStyle(color: Colors.white, fontSize: 14)),
+                          Text(DateFormat('E').format(date), style: TextStyle(color: isLightTheme ? Colors.black : Colors.white, fontSize: 14)),
                           SizedBox(height: 4),
                         ],
                       );
@@ -219,7 +221,7 @@ class _StepsHistoryState extends State<StepsHistory> {
               show: true,
               border: Border(
                 bottom: BorderSide(
-                  color: Colors.white,
+                  color: isLightTheme ? Colors.black : Colors.white,
                   width: 2,
                 ),
               ),
@@ -258,5 +260,4 @@ class _StepsHistoryState extends State<StepsHistory> {
       ),
     );
   }
-
 }

@@ -165,7 +165,7 @@ class _ReviewScreenState extends State<ReviewScreen> with SingleTickerProviderSt
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: theme.appBarTheme.backgroundColor,
+        backgroundColor: isDarkTheme ? theme.appBarTheme.backgroundColor : Colors.white, // Set to white in light mode
         elevation: 0,
         centerTitle: true,
         title: Text(
@@ -342,6 +342,7 @@ class GameTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Provider.of<ThemeProvider>(context).getTheme();
+    final isDarkTheme = theme.brightness == Brightness.dark;
 
     Color getStatusColor(String status) {
       switch (status.toLowerCase()) {
@@ -372,7 +373,7 @@ class GameTile extends StatelessWidget {
     return Container(
       margin: EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: theme.cardColor,
+        color: isDarkTheme ? theme.cardColor : Color(0xFFFAFAFB), // Set container color in light mode
         borderRadius: BorderRadius.circular(10),
       ),
       child: ListTile(
