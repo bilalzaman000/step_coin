@@ -380,7 +380,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       child: ListTile(
         onTap: () async {
           if (title == 'Watch an ad') {
-            AdManager().showRewardedAd(context, () async {
+            AdManager().showRewardedAd(context, _adReward , () async {
               // Update coins instantly after the ad is completed
               setState(() {
                 _TcoinValue += coins;

@@ -3,6 +3,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'Widgets/SnackBar.dart';
 class AdManager {
   static final AdManager _instance = AdManager._internal();
 
@@ -36,7 +37,8 @@ class AdManager {
       ),
     );
   }
-  void showRewardedAd(BuildContext context, VoidCallback onAdCompleted) {
+
+  void showRewardedAd(BuildContext context, int rewardValue, VoidCallback onAdCompleted) {
     if (_isRewardedAdReady) {
       _rewardedAd.fullScreenContentCallback = FullScreenContentCallback(
         onAdShowedFullScreenContent: (ad) {
@@ -55,7 +57,7 @@ class AdManager {
 
       _rewardedAd.show(onUserEarnedReward: (ad, reward) async {
         print('User earned reward: $reward');
-        await _handleReward(context);
+        await _handleReward(context, rewardValue);
         onAdCompleted(); // Call the callback after the ad is completed
       });
 
@@ -65,10 +67,7 @@ class AdManager {
     }
   }
 
-
-
-
-  Future<void> _handleReward(BuildContext context) async {
+  Future<void> _handleReward(BuildContext context, int rewardValue) async {
     User? user = FirebaseAuth.instance.currentUser;
 
     if (user != null) {
@@ -82,15 +81,15 @@ class AdManager {
           int currentCoins = snapshot.get('Coins') ?? 0;
 
           transaction.update(userDoc, {
-            'Ad_Coins': currentAdCoins + 50,
-            'Coins': currentCoins + 50,
+            'Ad_Coins': currentAdCoins + rewardValue,
+            'Coins': currentCoins + rewardValue,
           });
         }
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         customPasswordSnackbar(
-          message: 'Congratulations! You have earned 50 Coins',
+          message: 'Congratulations! You have earned $rewardValue Coins',
           onPressed: () {},
         ),
       );
@@ -110,34 +109,4 @@ class AdManager {
 
     MobileAds.instance.updateRequestConfiguration(requestConfiguration);
   }
-}
-
-SnackBar customPasswordSnackbar({required String message, required VoidCallback onPressed}) {
-  return SnackBar(
-    content: Container(
-      padding: EdgeInsets.symmetric(vertical: 10),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(15.0), // Adjust the radius as needed
-            child: Image.asset(
-              'assets/ExclaimationMark.png',
-              width: 50,
-              height: 50,
-            ),
-          ),
-          SizedBox(height: 10),
-          Text(
-            message,
-            style: TextStyle(color: Colors.white),
-          ),
-          SizedBox(height: 10),
-        ],
-      ),
-    ),
-    behavior: SnackBarBehavior.floating,
-    duration: Duration(seconds: 3),
-    backgroundColor: Colors.grey[850],  // Light black/grey color
-  );
 }
