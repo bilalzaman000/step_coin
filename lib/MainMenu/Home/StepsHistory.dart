@@ -14,6 +14,7 @@ class _StepsHistoryState extends State<StepsHistory> {
   List<Map<String, dynamic>> _stepHistory = [];
   int _currentSteps = 0;
   int _currentCoins = 0;
+  int _stepsDivider = 1;
   String _selectedDaySteps = '';
   String _selectedDayCoins = '';
 
@@ -21,6 +22,18 @@ class _StepsHistoryState extends State<StepsHistory> {
   void initState() {
     super.initState();
     _fetchStepHistory();
+    _fetchStepDivider();
+  }
+
+  Future<void> _fetchStepDivider() async {
+    try {
+      DocumentSnapshot stepsDividerSnapshot = await FirebaseFirestore.instance.collection('RewardRatio').doc('StepsDivider').get();
+      setState(() {
+        _stepsDivider = stepsDividerSnapshot['value'] ?? 1; // Default to 1 if not found
+      });
+    } catch (e) {
+      print('Error fetching step divider: $e');
+    }
   }
 
   Future<void> _fetchStepHistory() async {
@@ -56,7 +69,7 @@ class _StepsHistoryState extends State<StepsHistory> {
           return {
             'date': date,
             'steps': entry['steps'],
-            'coins': entry['coins'],
+            'coins': (entry['steps'] / _stepsDivider).toInt(), // Calculate coins using step divider
           };
         }).toList();
 
@@ -68,7 +81,7 @@ class _StepsHistoryState extends State<StepsHistory> {
         setState(() {
           _stepHistory = filteredSteps.reversed.toList();
           _currentSteps = prefs.getInt('steps') ?? 0;
-          _currentCoins = (_currentSteps / 3).toInt();
+          _currentCoins = (_currentSteps / _stepsDivider).toInt();
 
           // Default to current day
           if (_stepHistory.isNotEmpty) {

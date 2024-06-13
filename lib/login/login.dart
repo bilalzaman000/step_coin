@@ -323,7 +323,6 @@ class _LoginScreenState extends State<LoginScreen> {
               {
                 'date': DateFormat('yyyy-MM-dd').format(DateTime.now()), // Store the date as a string
                 'steps': 0, // Initialize steps as 0
-                'coins': 0, // Initialize coins as 0
               }
             ],// Initialize as an empty list
             'CurrentDaySteps': 0, // Initialize current day's steps as 0

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,6 +8,7 @@ import 'package:pedometer/pedometer.dart';
 import '../adManager.dart';
 import 'Home/ReviewScreen.dart';
 import 'Home/StepsHistory.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -24,6 +26,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   List<Map<String, dynamic>> _widgetsStatus = [];
   DateTime _lastResetDate = DateTime.now();
   late StreamSubscription<StepCount> _stepCountSubscription;
+  late StreamSubscription<AccelerometerEvent> _accelerometerSubscription;
+  bool _isDriving = false;
   int _stepsDivider = 1;
   int _adReward = 0;
   int _reviewReward = 0;
@@ -43,6 +47,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     _fetchCoinValueAndSteps().then((_) {
       _checkResetSteps();
       _initPedometer();
+      _initAccelerometer();
     });
     _fetchWidgetStatus();
     _fetchRewardRatios();
@@ -53,6 +58,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   void dispose() {
     _animationController.dispose();
     _stepCountSubscription.cancel();
+    _accelerometerSubscription.cancel();
     super.dispose();
   }
 
@@ -85,7 +91,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       if (snapshot.exists) {
         setState(() {
           _TcoinValue = snapshot['Coins'] ?? 0;
-          print("$_TcoinValue");
           _steps = prefs.getInt('steps') ?? snapshot['CurrentDaySteps'] ?? 0;
           _lastResetDate = (prefs.getString('lastResetDate') != null)
               ? DateTime.parse(prefs.getString('lastResetDate')!)
@@ -116,16 +121,33 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     _stepCountSubscription = Pedometer.stepCountStream.listen(_onStepCount, onError: _onStepCountError);
   }
 
-  void _onStepCount(StepCount event) {
-    if (_initialSteps == 0) {
-      _initialSteps = event.steps;
-      _saveInitialSteps();
-    }
-    setState(() {
-      _steps = event.steps - _initialSteps;
+  void _initAccelerometer() {
+    _accelerometerSubscription = accelerometerEvents.listen((AccelerometerEvent event) {
+      double acceleration = sqrt(event.x * event.x + event.y * event.y + event.z * event.z);
+      if (acceleration > 15) {
+        setState(() {
+          _isDriving = true;
+        });
+      } else {
+        setState(() {
+          _isDriving = false;
+        });
+      }
     });
-    _saveStepsLocally();
-    _updateDatabaseWithSteps();
+  }
+
+  void _onStepCount(StepCount event) {
+    if (!_isDriving) {
+      if (_initialSteps == 0) {
+        _initialSteps = event.steps;
+        _saveInitialSteps();
+      }
+      setState(() {
+        _steps = event.steps - _initialSteps;
+      });
+      _saveStepsLocally();
+      _updateDatabaseWithSteps();
+    }
   }
 
   void _onStepCountError(error) {
@@ -150,7 +172,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       if (snapshot.exists) {
         final now = DateTime.now();
         final currentSteps = _steps;
-        final currentCoins = (currentSteps / _stepsDivider).toInt();
 
         List<dynamic> dailySteps = snapshot['DailySteps'] ?? [];
 
@@ -169,7 +190,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               entryDate.month == now.month &&
               entryDate.year == now.year) {
             entry['steps'] = currentSteps;
-            entry['coins'] = currentCoins;
             todayEntryExists = true;
             break;
           }
@@ -177,21 +197,19 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
         if (!todayEntryExists) {
           dailySteps.add({
-            'date': now,
+            'date': now.toIso8601String(),
             'steps': currentSteps,
-            'coins': currentCoins,
           });
         }
 
         await userDoc.update({
           'DailySteps': dailySteps,
           'CurrentDaySteps': currentSteps,
-          'CoinsEarnedToday': currentCoins,
         });
 
         if (mounted) {
           setState(() {
-            _coinValue = currentCoins;
+            _coinValue = (currentSteps / _stepsDivider).toInt();
           });
         }
       }
@@ -223,7 +241,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           'CurrentDaySteps': 0,
           'LastResetDate': now,
           'Coins': FieldValue.increment(coinsEarnedToday),
-          'CoinsEarnedToday': 0,
         });
 
         prefs.setInt('coinValue', (prefs.getInt('coinValue') ?? 0) + coinsEarnedToday);
@@ -380,8 +397,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       child: ListTile(
         onTap: () async {
           if (title == 'Watch an ad') {
-            AdManager().showRewardedAd(context, _adReward , () async {
-              // Update coins instantly after the ad is completed
+            AdManager().showRewardedAd(context, _adReward, () async {
               setState(() {
                 _TcoinValue += coins;
               });
@@ -417,6 +433,4 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       ),
     );
   }
-
-
 }
