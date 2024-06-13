@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 
 import 'Redemption/PaymentEmailScreen.dart';
+import '../../Theme/ThemeProvider.dart';
 
 class RedemptionPage extends StatefulWidget {
   @override
@@ -28,22 +30,25 @@ class _RedemptionPageState extends State<RedemptionPage> with SingleTickerProvid
       'Coins': snapshot['Coins'],
       'Cashed_Coins': snapshot['Cashed_Coins'],
     };
-
   }
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final theme = themeProvider.getTheme();
+    final isDarkTheme = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: isDarkTheme ? theme.appBarTheme.backgroundColor : Colors.white,
         title: FutureBuilder<Map<String, int>>(
           future: _fetchUserCoins(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator(color: Colors.white));
+              return Center(child: CircularProgressIndicator(color: isDarkTheme ? Colors.white : Colors.black));
             } else if (snapshot.hasError) {
-              return Text('Error', style: TextStyle(color: Colors.white));
+              return Text('Error', style: TextStyle(color: isDarkTheme ? Colors.white : Colors.black));
             } else {
               int coins = snapshot.data?['Coins'] ?? 0;
               int cashedCoins = snapshot.data?['Cashed_Coins'] ?? 0;
@@ -51,22 +56,22 @@ class _RedemptionPageState extends State<RedemptionPage> with SingleTickerProvid
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: _tabController.index == 0
                     ? [
-                  Text('StepsCoins', style: TextStyle(color: Colors.white)),
+                  Text('StepsCoins', style: TextStyle(color: isDarkTheme ? Colors.white : Colors.black)),
                   Row(
                     children: [
                       Image.asset('assets/Coin.png', height: 24),
                       SizedBox(width: 8),
-                      Text('$coins', style: TextStyle(color: Colors.white)),
+                      Text('$coins', style: TextStyle(color: isDarkTheme ? Colors.white : Colors.black)),
                     ],
                   ),
                 ]
                     : [
-                  Text('Cashed Coins', style: TextStyle(color: Colors.white)),
+                  Text('Cashed Coins', style: TextStyle(color: isDarkTheme ? Colors.white : Colors.black)),
                   Row(
                     children: [
                       Image.asset('assets/Coin.png', height: 24),
                       SizedBox(width: 8),
-                      Text('$cashedCoins', style: TextStyle(color: Colors.white)),
+                      Text('$cashedCoins', style: TextStyle(color: isDarkTheme ? Colors.white : Colors.black)),
                     ],
                   ),
                 ],
@@ -76,9 +81,9 @@ class _RedemptionPageState extends State<RedemptionPage> with SingleTickerProvid
         ),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.grey,
+          indicatorColor: isDarkTheme ? Colors.white : Colors.black,
+          labelColor: isDarkTheme ? Colors.white : Colors.black,
+          unselectedLabelColor: isDarkTheme ? Colors.white70 : Colors.black54,
           tabs: [
             Tab(text: 'Available'),
             Tab(text: 'Redeemed'),
@@ -97,73 +102,77 @@ class _RedemptionPageState extends State<RedemptionPage> with SingleTickerProvid
 }
 
 class AvailableTab extends StatelessWidget {
+  Future<List<Map<String, dynamic>>> _fetchRewardRatios() async {
+    List<String> docIds = ['Redeem', 'Redeem2', 'Redeem3'];
+    List<Map<String, dynamic>> rewardRatios = [];
+
+    for (String docId in docIds) {
+      try {
+        DocumentSnapshot snapshot = await FirebaseFirestore.instance.collection('RewardRatio').doc(docId).get();
+        if (snapshot.exists) {
+          rewardRatios.add({
+            'value': snapshot['Coins'],
+            'dollars': snapshot['Dollars'],
+          });
+        } else {
+          print('Document $docId does not exist');
+        }
+      } catch (e) {
+        print('Error fetching document $docId: $e');
+        throw e;
+      }
+    }
+    return rewardRatios;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Provider.of<ThemeProvider>(context).getTheme();
+    final isDarkTheme = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: ListView(
-        padding: const EdgeInsets.all(8.0),
-        children: [
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => PaymentEmailScreen(
-                  title: 'PayPal Transfer',
-                  value: '\$10',
-                  tagValue: 1000,
-                )),
-              );
-            },
-            child: RedemptionTile(
-              imageUrl: 'assets/Redemptions/PayPal.png',
-              title: 'PayPal Transfer',
-              value: '\$10',
-              description: 'Coupons directly on your email',
-              tagValue: '1000',
-            ),
-          ),
-          SizedBox(height: 8),
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => PaymentEmailScreen(
-                  title: 'Amazon Gift Card',
-                  value: '\$15',
-                  tagValue: 1500,
-                )),
-              );
-            },
-            child: RedemptionTile(
-              imageUrl: 'assets/Redemptions/PayPal.png',
-              title: 'PayPal Transfer',
-              value: '\$15',
-              description: 'Coupons directly on your email',
-              tagValue: '1500',
-            ),
-          ),
-          SizedBox(height: 8),
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => PaymentEmailScreen(
-                  title: 'Google Play Gift Card',
-                  value: '\$25',
-                  tagValue: 2500,
-                )),
-              );
-            },
-            child: RedemptionTile(
-              imageUrl: 'assets/Redemptions/PayPal.png',
-              title: 'PayPal Transfer',
-              value: '\$25',
-              description: 'Coupons directly on your email',
-              tagValue: '2500',
-            ),
-          ),
-        ],
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: _fetchRewardRatios(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator(color: isDarkTheme ? Colors.white : Colors.black));
+          } else if (snapshot.hasError) {
+            print('Error loading rewards: ${snapshot.error}');
+            return Center(
+                child: Text('Error loading rewards', style: TextStyle(color: isDarkTheme ? Colors.white : Colors.black)));
+          } else {
+            List<Map<String, dynamic>> rewardRatios = snapshot.data ?? [];
+            return ListView.builder(
+              padding: const EdgeInsets.all(8.0),
+              itemCount: rewardRatios.length,
+              itemBuilder: (context, index) {
+                var reward = rewardRatios[index];
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PaymentEmailScreen(
+                          title: 'PayPal Transfer',
+                          value: '\$${reward['dollars']}',
+                          tagValue: reward['value'],
+                        ),
+                      ),
+                    );
+                  },
+                  child: RedemptionTile(
+                    imageUrl: 'assets/Redemptions/PayPal.png',
+                    title: 'PayPal Transfer',
+                    value: '\$${reward['dollars']}',
+                    description: 'Coupons directly on your email',
+                    tagValue: reward['value'].toString(),
+                  ),
+                );
+              },
+            );
+          }
+        },
       ),
     );
   }
@@ -172,9 +181,11 @@ class AvailableTab extends StatelessWidget {
 class RedeemedTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final theme = Provider.of<ThemeProvider>(context).getTheme();
+
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: Center(child: Text('Redeemed Content', style: TextStyle(color: Colors.white))),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: Center(child: Text('Redeemed Content', style: theme.textTheme.bodyLarge)),
     );
   }
 }
@@ -196,8 +207,11 @@ class RedemptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Provider.of<ThemeProvider>(context).getTheme();
+    final isDarkTheme = theme.brightness == Brightness.dark;
+
     return Card(
-      color: Colors.black87,
+      color: isDarkTheme ? Colors.black87 : Colors.white,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -209,7 +223,7 @@ class RedemptionTile extends StatelessWidget {
                 left: 8,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.grey,
+                    color: isDarkTheme ? Colors.grey : Colors.black45,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   padding: EdgeInsets.all(4),
@@ -226,14 +240,14 @@ class RedemptionTile extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Text(title, style: TextStyle(color: Colors.white, fontSize: 18)),
+            child: Text(title, style: theme.textTheme.bodyLarge),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(description, style: TextStyle(color: Colors.white)),
+                Text(description, style: theme.textTheme.bodyLarge),
                 Text(value, style: TextStyle(color: Colors.green, fontSize: 24)),
               ],
             ),
@@ -251,6 +265,8 @@ class DetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Provider.of<ThemeProvider>(context).getTheme();
+
     return Scaffold(
       appBar: AppBar(
         title: Text(title),

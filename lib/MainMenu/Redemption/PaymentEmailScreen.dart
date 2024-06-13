@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:email_validator/email_validator.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:provider/provider.dart';
+import '../../Theme/ThemeProvider.dart';
 
 class PaymentEmailScreen extends StatefulWidget {
   final String title;
@@ -21,61 +21,6 @@ class _PaymentEmailScreenState extends State<PaymentEmailScreen> {
   final TextEditingController _emailController = TextEditingController();
   bool _isLoading = false;
 
-  Future<String> _getPayPalAccessToken() async {
-    final clientId = 'YOUR_PAYPAL_SANDBOX_CLIENT_ID';
-    final secret = 'YOUR_PAYPAL_SANDBOX_SECRET';
-    final credentials = base64Encode(utf8.encode('$clientId:$secret'));
-
-    final response = await http.post(
-      Uri.parse('https://api.sandbox.paypal.com/v1/oauth2/token'),
-      headers: {
-        'Authorization': 'Basic $credentials',
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: 'grant_type=client_credentials',
-    );
-
-    if (response.statusCode == 200) {
-      final body = jsonDecode(response.body);
-      return body['access_token'];
-    } else {
-      throw Exception('Failed to obtain PayPal access token');
-    }
-  }
-
-  Future<void> _sendPayPalPayout(String email, String amount) async {
-    final accessToken = await _getPayPalAccessToken();
-    final response = await http.post(
-      Uri.parse('https://api.sandbox.paypal.com/v1/payments/payouts'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $accessToken',
-      },
-      body: jsonEncode({
-        "sender_batch_header": {
-          "sender_batch_id": "Payouts_${DateTime.now().millisecondsSinceEpoch}",
-          "email_subject": "You have a payout!",
-        },
-        "items": [
-          {
-            "recipient_type": "EMAIL",
-            "amount": {
-              "value": amount,
-              "currency": "USD",
-            },
-            "receiver": email,
-            "note": "Thanks for your participation!",
-            "sender_item_id": "item_1",
-          },
-        ],
-      }),
-    );
-
-    if (response.statusCode != 201) {
-      throw Exception('Failed to send PayPal payout');
-    }
-  }
-
   Future<void> _redeemCoins() async {
     setState(() {
       _isLoading = true;
@@ -88,14 +33,14 @@ class _PaymentEmailScreenState extends State<PaymentEmailScreen> {
 
       int coins = snapshot['Coins'];
       if (coins >= widget.tagValue) {
-        await userDoc.update({'Coins': coins - widget.tagValue});
-
-        await _sendPayPalPayout(_emailController.text, widget.value.substring(1));
-
+        print('Coins: $coins');
+        print('Tag Value: ${widget.tagValue}');
+        print('Dollar Value: ${widget.value}');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Coupon sent successfully!')),
+          SnackBar(content: Text('Data printed successfully!')),
         );
-        Navigator.pop(context);  // Go back after successful redemption
+        // Navigate back after successful redemption (you can comment this out if you don't want to navigate back)
+        Navigator.pop(context);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Not enough coins')),
@@ -114,9 +59,14 @@ class _PaymentEmailScreenState extends State<PaymentEmailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final theme = themeProvider.getTheme();
+    final isDarkTheme = theme.brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         title: Center(child: Text('Redeem Coins')),
+        backgroundColor: isDarkTheme ? theme.scaffoldBackgroundColor : Colors.white,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -128,17 +78,31 @@ class _PaymentEmailScreenState extends State<PaymentEmailScreen> {
             children: [
               Image.asset('assets/Redeem.png', height: 100),
               SizedBox(height: 20),
-              Text('Enter your PayPal email to receive the coupon:', style: TextStyle(color: Colors.white)),
+              Text(
+                'Enter your PayPal email to receive the coupon:',
+                style: TextStyle(color: isDarkTheme ? Colors.white : Colors.black),
+              ),
+              SizedBox(height: 20),
+              Text(
+                'Coins Required: ${widget.tagValue}',
+                style: TextStyle(color: isDarkTheme ? Colors.white : Colors.black, fontSize: 18),
+              ),
+              SizedBox(height: 10),
+              Text(
+                'Dollar Value: ${widget.value}',
+                style: TextStyle(color: isDarkTheme ? Colors.white : Colors.black, fontSize: 18),
+              ),
+              SizedBox(height: 20),
               TextFormField(
                 controller: _emailController,
                 decoration: InputDecoration(
                   labelText: 'Email',
-                  labelStyle: TextStyle(color: Colors.white),
+                  labelStyle: TextStyle(color: isDarkTheme ? Colors.white : Colors.black),
                   enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Colors.white),
+                    borderSide: BorderSide(color: isDarkTheme ? Colors.white : Colors.black),
                   ),
                   focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Colors.white),
+                    borderSide: BorderSide(color: isDarkTheme ? Colors.white : Colors.black),
                   ),
                 ),
                 validator: (value) {
@@ -149,7 +113,7 @@ class _PaymentEmailScreenState extends State<PaymentEmailScreen> {
                   }
                   return null;
                 },
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: isDarkTheme ? Colors.white : Colors.black),
               ),
               SizedBox(height: 20),
               _isLoading
@@ -160,9 +124,12 @@ class _PaymentEmailScreenState extends State<PaymentEmailScreen> {
                     _redeemCoins();
                   }
                 },
-                child: Text('Submit', style: TextStyle(color: Colors.black)),
+                child: Text(
+                  'Submit',
+                  style: TextStyle(color: isDarkTheme ? Colors.black : Colors.white),
+                ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
+                  backgroundColor: isDarkTheme ? Colors.white : Colors.black,
                 ),
               ),
             ],
