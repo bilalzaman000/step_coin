@@ -17,12 +17,10 @@ void callbackDispatcher() {
     try {
       WidgetsFlutterBinding.ensureInitialized();
       await Firebase.initializeApp();
-
       SharedPreferences prefs = await SharedPreferences.getInstance();
       int steps = prefs.getInt('steps') ?? 0;
       DateTime now = DateTime.now();
       DateTime lastResetDate = DateTime.parse(prefs.getString('lastResetDate') ?? now.toIso8601String());
-
       if (now.day != lastResetDate.day || now.month != lastResetDate.month || now.year != lastResetDate.year) {
         String? uid = FirebaseAuth.instance.currentUser?.uid;
         if (uid != null) {
@@ -34,22 +32,18 @@ void callbackDispatcher() {
             DateTime entryDate = DateTime.parse(entry['date']);
             return entryDate.day == lastResetDate.day && entryDate.month == lastResetDate.month && entryDate.year == lastResetDate.year;
           });
-
           if (!alreadyExists) {
             dailySteps.add({
               'date': lastResetDate.toIso8601String(),
               'steps': steps,
             });
-
             int coinsEarnedToday = (steps / 1).toInt(); // Replace 1 with your step to coin ratio if needed
-
             await userDoc.update({
               'DailySteps': dailySteps,
               'CurrentDaySteps': 0,
               'LastResetDate': now,
               'Coins': FieldValue.increment(coinsEarnedToday),
             });
-
             prefs.setInt('coinValue', (prefs.getInt('coinValue') ?? 0) + coinsEarnedToday);
             prefs.setInt('steps', 0);
             prefs.setString('lastResetDate', now.toIso8601String());
@@ -57,7 +51,8 @@ void callbackDispatcher() {
           }
         }
       }
-
+      // Reschedule the task for the next midnight
+      scheduleMidnightTask();
       return Future.value(true);
     } catch (e) {
       print("Error in callbackDispatcher: $e");
@@ -65,7 +60,6 @@ void callbackDispatcher() {
     }
   });
 }
-
 Future<void> requestPermissions() async {
   await [
     Permission.activityRecognition,
@@ -73,29 +67,33 @@ Future<void> requestPermissions() async {
   ].request();
 }
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  AdManager().updateRequestConfiguration();
-  AdManager().initialize();
-
-  await requestPermissions();
-
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  String theme = prefs.getString('theme') ?? 'light';
-  ThemeData initialTheme = theme == 'dark' ? darkTheme : lightTheme;
-
+void scheduleMidnightTask() {
+  DateTime now = DateTime.now();
+  DateTime midnight = DateTime(now.year, now.month, now.day + 1, 0, 0, 0);
+  print("Scheduling task for midnight: $midnight");
+  Duration initialDelay = midnight.difference(now);
   Workmanager().initialize(callbackDispatcher, isInDebugMode: true);
-  Workmanager().registerPeriodicTask(
+  Workmanager().registerOneOffTask(
     "1",
     "stepCounterTask",
-    frequency: Duration(hours: 24),
-    initialDelay: Duration(seconds: 10),
+    initialDelay: initialDelay,
     constraints: Constraints(
       networkType: NetworkType.not_required,
       requiresBatteryNotLow: true,
     ),
   );
+}
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  AdManager().updateRequestConfiguration();
+  AdManager().initialize();
+  await requestPermissions();
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String theme = prefs.getString('theme') ?? 'light';
+  ThemeData initialTheme = theme == 'dark' ? darkTheme : lightTheme;
+
+  scheduleMidnightTask();
 
   runApp(
     ChangeNotifierProvider(

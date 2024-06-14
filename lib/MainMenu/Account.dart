@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:share_plus/share_plus.dart';
 import '../Theme/ThemeProvider.dart';
 import '../login/login.dart';
 import 'Account/ChangePassword.dart';
@@ -43,8 +45,54 @@ class AccountPage extends StatelessWidget {
             Icons.nightlight_round,
             themeProvider,
           ),
+          _buildInviteFriendItem(context, themeProvider),
           _buildLogoutItem(context, themeProvider),
         ],
+      ),
+    );
+  }
+
+  Future<String?> getInviteUrl() async {
+    try {
+      DocumentSnapshot doc = await FirebaseFirestore.instance
+          .collection('URL')
+          .doc('app')
+          .get();
+      return doc['url'];
+    } catch (e) {
+      print('Error getting invite URL: $e');
+      return null;
+    }
+  }
+
+  Widget _buildInviteFriendItem(BuildContext context, ThemeProvider themeProvider) {
+    final theme = Theme.of(context);
+    Color cardColor = theme.brightness == Brightness.light ? Color(0xFFFAFAFB) : theme.colorScheme.surface;
+
+    return Card(
+      color: cardColor,
+      margin: EdgeInsets.symmetric(vertical: 8.0),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: themeProvider.getTheme().brightness == Brightness.dark ? Colors.black : Colors.white,
+          child: Icon(Icons.group, color: themeProvider.getTheme().brightness == Brightness.dark ? Colors.white : Colors.black),
+          radius: 24,
+        ),
+        title: Text(
+          'Invite a Friend',
+          style: TextStyle(color: themeProvider.getTheme().brightness == Brightness.dark ? Colors.white : Colors.black),
+        ),
+        trailing: Icon(Icons.arrow_forward_ios, color: theme.iconTheme.color),
+        onTap: () async {
+          String? url = await getInviteUrl();
+          if (url != null) {
+            Share.share('Check out this app: $url');
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to get invite link')),
+            );
+          }
+        },
       ),
     );
   }
