@@ -45,7 +45,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     _stepsAnimation = Tween<double>(begin: 0, end: _steps.toDouble()).animate(_animationController);
     _coinsAnimation = Tween<double>(begin: 0, end: (_steps / _stepsDivider).toDouble()).animate(_animationController);
     _fetchCoinValueAndSteps().then((_) {
-      _checkResetSteps();
       _initPedometer();
       _initAccelerometer();
     });
@@ -70,13 +69,17 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       DocumentSnapshot gameSnapshot = await FirebaseFirestore.instance.collection('RewardRatio').doc('Game').get();
       DocumentSnapshot surveySnapshot = await FirebaseFirestore.instance.collection('RewardRatio').doc('Survey').get();
 
-      setState(() {
-        _stepsDivider = stepsDividerSnapshot['value'];
-        _adReward = adSnapshot['value'];
-        _reviewReward = reviewSnapshot['value'];
-        _gameReward = gameSnapshot['value'];
-        _surveyReward = surveySnapshot['value'];
-      });
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      if (mounted) {
+        setState(() {
+          _stepsDivider = stepsDividerSnapshot['value'];
+          _adReward = adSnapshot['value'];
+          _reviewReward = reviewSnapshot['value'];
+          _gameReward = gameSnapshot['value'];
+          _surveyReward = surveySnapshot['value'];
+        });
+        prefs.setInt('stepsDivider', _stepsDivider); // Save stepsDivider to SharedPreferences
+      }
     } catch (e) {
       print('Error fetching reward ratios: $e');
     }
@@ -89,14 +92,16 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     if (uid != null) {
       DocumentSnapshot snapshot = await FirebaseFirestore.instance.collection('users').doc(uid).get();
       if (snapshot.exists) {
-        setState(() {
-          _TcoinValue = snapshot['Coins'] ?? 0;
-          _steps = prefs.getInt('steps') ?? snapshot['CurrentDaySteps'] ?? 0;
-          _lastResetDate = (prefs.getString('lastResetDate') != null)
-              ? DateTime.parse(prefs.getString('lastResetDate')!)
-              : (snapshot['LastResetDate'] as Timestamp).toDate();
-          _initialSteps = prefs.getInt('initialSteps') ?? 0;
-        });
+        if (mounted) {
+          setState(() {
+            _TcoinValue = snapshot['Coins'] ?? 0;
+            _steps = prefs.getInt('steps') ?? snapshot['CurrentDaySteps'] ?? 0;
+            _lastResetDate = (prefs.getString('lastResetDate') != null)
+                ? DateTime.parse(prefs.getString('lastResetDate')!)
+                : (snapshot['LastResetDate'] as Timestamp).toDate();
+            _initialSteps = prefs.getInt('initialSteps') ?? 0;
+          });
+        }
         await _updateDatabaseWithSteps();
       } else {
         print('Document does not exist');
@@ -108,9 +113,11 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     try {
       QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('Widgets').get();
       List<Map<String, dynamic>> widgetsStatus = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
-      setState(() {
-        _widgetsStatus = widgetsStatus;
-      });
+      if (mounted) {
+        setState(() {
+          _widgetsStatus = widgetsStatus;
+        });
+      }
     } catch (e) {
       print('Error fetching widget status: $e');
     }
@@ -213,54 +220,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           });
         }
       }
-    }
-  }
-
-  Future<void> resetSteps() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String? uid = FirebaseAuth.instance.currentUser?.uid;
-
-    if (uid != null) {
-      final DocumentReference userDoc = FirebaseFirestore.instance.collection('users').doc(uid);
-      final DocumentSnapshot snapshot = await userDoc.get();
-
-      if (snapshot.exists) {
-        final int currentSteps = prefs.getInt('steps') ?? 0;
-        final int coinsEarnedToday = (currentSteps / _stepsDivider).toInt();
-        final DateTime now = DateTime.now();
-
-        List<dynamic> dailySteps = snapshot['DailySteps'] ?? [];
-        dailySteps.add({
-          'date': now.toIso8601String(),
-          'steps': currentSteps,
-          'coins': coinsEarnedToday,
-        });
-
-        await userDoc.update({
-          'DailySteps': dailySteps,
-          'CurrentDaySteps': 0,
-          'LastResetDate': now,
-          'Coins': FieldValue.increment(coinsEarnedToday),
-        });
-
-        prefs.setInt('coinValue', (prefs.getInt('coinValue') ?? 0) + coinsEarnedToday);
-        prefs.setInt('steps', 0);
-        prefs.setString('lastResetDate', now.toIso8601String());
-        prefs.setInt('initialSteps', 0);
-
-        setState(() {
-          _coinValue = prefs.getInt('coinValue')!;
-          _steps = 0;
-          _initialSteps = 0;
-        });
-      }
-    }
-  }
-
-  void _checkResetSteps() {
-    final DateTime now = DateTime.now();
-    if (now.difference(_lastResetDate).inDays >= 1) {
-      resetSteps();
     }
   }
 

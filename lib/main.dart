@@ -5,54 +5,25 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:step_coin/splashscreen.dart';
 import 'package:step_coin/welcomepage.dart';
 import 'MainMenu.dart';
+import 'StepService.dart';
 import 'Theme/ThemeProvider.dart';
 import 'package:workmanager/workmanager.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'adManager.dart';
+
 
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     try {
+      print('\x1B[31mExecuting midnight task\x1B[0m'); // Added logging
       WidgetsFlutterBinding.ensureInitialized();
       await Firebase.initializeApp();
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      int steps = prefs.getInt('steps') ?? 0;
-      DateTime now = DateTime.now();
-      DateTime lastResetDate = DateTime.parse(prefs.getString('lastResetDate') ?? now.toIso8601String());
-      if (now.day != lastResetDate.day || now.month != lastResetDate.month || now.year != lastResetDate.year) {
-        String? uid = FirebaseAuth.instance.currentUser?.uid;
-        if (uid != null) {
-          DocumentReference userDoc = FirebaseFirestore.instance.collection('users').doc(uid);
-          DocumentSnapshot userSnapshot = await userDoc.get();
-          List<dynamic> dailySteps = userSnapshot.get('DailySteps') ?? [];
 
-          bool alreadyExists = dailySteps.any((entry) {
-            DateTime entryDate = DateTime.parse(entry['date']);
-            return entryDate.day == lastResetDate.day && entryDate.month == lastResetDate.month && entryDate.year == lastResetDate.year;
-          });
-          if (!alreadyExists) {
-            dailySteps.add({
-              'date': lastResetDate.toIso8601String(),
-              'steps': steps,
-            });
-            int coinsEarnedToday = (steps / 1).toInt(); // Replace 1 with your step to coin ratio if needed
-            await userDoc.update({
-              'DailySteps': dailySteps,
-              'CurrentDaySteps': 0,
-              'LastResetDate': now,
-              'Coins': FieldValue.increment(coinsEarnedToday),
-            });
-            prefs.setInt('coinValue', (prefs.getInt('coinValue') ?? 0) + coinsEarnedToday);
-            prefs.setInt('steps', 0);
-            prefs.setString('lastResetDate', now.toIso8601String());
-            prefs.setInt('initialSteps', 0);
-          }
-        }
-      }
-      // Reschedule the task for the next midnight
-      scheduleMidnightTask();
+      int stepsDivider = prefs.getInt('stepsDivider') ?? 1; // Default to 1 if not set
+      await StepService.resetSteps(stepsDivider); // Call the resetSteps function with the stepsDivider
+
+      scheduleMidnightTask(); // Reschedule the task for the next midnight
       return Future.value(true);
     } catch (e) {
       print("Error in callbackDispatcher: $e");
@@ -60,6 +31,7 @@ void callbackDispatcher() {
     }
   });
 }
+
 Future<void> requestPermissions() async {
   await [
     Permission.activityRecognition,
@@ -70,7 +42,8 @@ Future<void> requestPermissions() async {
 void scheduleMidnightTask() {
   DateTime now = DateTime.now();
   DateTime midnight = DateTime(now.year, now.month, now.day + 1, 0, 0, 0);
-  print("Scheduling task for midnight: $midnight");
+  String redText = '\x1B[31mScheduling task for midnight: $midnight\x1B[0m';
+  print(redText);
   Duration initialDelay = midnight.difference(now);
   Workmanager().initialize(callbackDispatcher, isInDebugMode: true);
   Workmanager().registerOneOffTask(
@@ -83,6 +56,7 @@ void scheduleMidnightTask() {
     ),
   );
 }
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
