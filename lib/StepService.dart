@@ -15,26 +15,22 @@ class StepService {
         final int currentSteps = prefs.getInt('steps') ?? 0;
         final int coinsEarnedToday = (currentSteps / stepsDivider).toInt();
         final DateTime now = DateTime.now();
-
         List<dynamic> dailySteps = snapshot['DailySteps'] ?? [];
         dailySteps.add({
           'date': now.toIso8601String(),
           'steps': currentSteps,
           'coins': coinsEarnedToday,
         });
-
         await userDoc.update({
           'DailySteps': dailySteps,
           'CurrentDaySteps': 0,
           'LastResetDate': now,
           'Coins': FieldValue.increment(coinsEarnedToday),
         });
-
         prefs.setInt('coinValue', (prefs.getInt('coinValue') ?? 0) + coinsEarnedToday);
         prefs.setInt('steps', 0);
         prefs.setString('lastResetDate', now.toIso8601String());
         prefs.setInt('initialSteps', 0);
-
         // Log to indicate reset steps
         print('\x1B[31mSteps reset at midnight\x1B[0m');
       }

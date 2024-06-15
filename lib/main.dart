@@ -19,10 +19,8 @@ void callbackDispatcher() {
       WidgetsFlutterBinding.ensureInitialized();
       await Firebase.initializeApp();
       SharedPreferences prefs = await SharedPreferences.getInstance();
-
       int stepsDivider = prefs.getInt('stepsDivider') ?? 1; // Default to 1 if not set
       await StepService.resetSteps(stepsDivider); // Call the resetSteps function with the stepsDivider
-
       scheduleMidnightTask(); // Reschedule the task for the next midnight
       return Future.value(true);
     } catch (e) {

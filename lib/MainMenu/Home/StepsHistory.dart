@@ -30,6 +30,7 @@ class _StepsHistoryState extends State<StepsHistory> {
       DocumentSnapshot stepsDividerSnapshot = await FirebaseFirestore.instance.collection('RewardRatio').doc('StepsDivider').get();
       setState(() {
         _stepsDivider = stepsDividerSnapshot['value'] ?? 1; // Default to 1 if not found
+        print("object$_stepsDivider");
       });
     } catch (e) {
       print('Error fetching step divider: $e');
@@ -44,7 +45,6 @@ class _StepsHistoryState extends State<StepsHistory> {
       DocumentSnapshot snapshot = await FirebaseFirestore.instance.collection('users').doc(uid).get();
       if (snapshot.exists) {
         List<dynamic> dailySteps = snapshot['DailySteps'] ?? [];
-
         // Filter out records older than 7 days
         DateTime sevenDaysAgo = DateTime.now().subtract(Duration(days: 7));
         List<Map<String, dynamic>> filteredSteps = dailySteps.where((entry) {
