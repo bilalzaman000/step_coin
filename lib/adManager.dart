@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'Widgets/SnackBar.dart';
+
 class AdManager {
   static final AdManager _instance = AdManager._internal();
 
@@ -13,7 +14,7 @@ class AdManager {
 
   AdManager._internal();
 
-  late RewardedAd _rewardedAd;
+  RewardedAd? _rewardedAd;
   bool _isRewardedAdReady = false;
 
   void initialize() {
@@ -29,6 +30,7 @@ class AdManager {
         onAdLoaded: (ad) {
           _rewardedAd = ad;
           _isRewardedAdReady = true;
+          print('RewardedAd loaded.');
         },
         onAdFailedToLoad: (error) {
           _isRewardedAdReady = false;
@@ -38,9 +40,13 @@ class AdManager {
     );
   }
 
+  bool isAdReady() {
+    return _isRewardedAdReady;
+  }
+
   void showRewardedAd(BuildContext context, int rewardValue, VoidCallback onAdCompleted) {
-    if (_isRewardedAdReady) {
-      _rewardedAd.fullScreenContentCallback = FullScreenContentCallback(
+    if (_isRewardedAdReady && _rewardedAd != null) {
+      _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
         onAdShowedFullScreenContent: (ad) {
           print('RewardedAd showed full screen content.');
         },
@@ -55,15 +61,21 @@ class AdManager {
         },
       );
 
-      _rewardedAd.show(onUserEarnedReward: (ad, reward) async {
+      _rewardedAd!.show(onUserEarnedReward: (ad, reward) async {
         print('User earned reward: $reward');
         await _handleReward(context, rewardValue);
         onAdCompleted(); // Call the callback after the ad is completed
       });
 
       _isRewardedAdReady = false;
+      _rewardedAd = null; // Ensure the ad is reset after showing
     } else {
       print('RewardedAd is not ready.');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No ads in your region right now. Please try again later.'),
+        ),
+      );
     }
   }
 
