@@ -2,15 +2,14 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:step_coin/splashscreen.dart';
-import 'package:step_coin/welcomepage.dart';
 import 'MainMenu.dart';
 import 'StepService.dart';
 import 'Theme/ThemeProvider.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'adManager.dart';
-
+import 'splashscreen.dart';
+import 'welcomepage.dart';
 
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
@@ -65,7 +64,7 @@ void main() async {
   String theme = prefs.getString('theme') ?? 'light';
   ThemeData initialTheme = theme == 'dark' ? darkTheme : lightTheme;
 
-  scheduleMidnightTask();
+  scheduleMidnightTask(); // Ensure this is called to schedule the task.
 
   runApp(
     ChangeNotifierProvider(

@@ -305,10 +305,8 @@ class _LoginScreenState extends State<LoginScreen> {
         final UserCredential userCredential =
         await _auth.signInWithCredential(credential);
 
-        // Check if user is new or existing and navigate accordingly
+
         if (userCredential.additionalUserInfo!.isNewUser) {
-          // Handle new user
-          // Add user data to Firestore
           final String? userName = googleSignInAccount.displayName;
           final String? email = googleSignInAccount.email;
           await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
