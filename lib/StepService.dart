@@ -31,9 +31,10 @@ class StepService {
         prefs.setInt('steps', 0);
         prefs.setString('lastResetDate', now.toIso8601String());
         prefs.setInt('initialSteps', 0);
-        // Log to indicate reset steps
         print('\x1B[31mSteps reset at midnight\x1B[0m');
       }
     }
   }
 }
+
+

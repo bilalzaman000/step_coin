@@ -54,6 +54,24 @@ void scheduleMidnightTask() {
   );
 }
 
+Future<void> checkAndResetSteps() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String? lastResetDateStr = prefs.getString('lastResetDate');
+  DateTime now = DateTime.now();
+  DateTime today = DateTime(now.year, now.month, now.day);
+
+  if (lastResetDateStr != null) {
+    DateTime lastResetDate = DateTime.parse(lastResetDateStr);
+    if (lastResetDate.isBefore(today)) {
+      int stepsDivider = prefs.getInt('stepsDivider') ?? 1; // Default to 1 if not set
+      await StepService.resetSteps(stepsDivider); // Reset steps if date has changed
+    }
+  } else {
+    // First run, set the last reset date to today
+    prefs.setString('lastResetDate', today.toIso8601String());
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
@@ -63,6 +81,9 @@ void main() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   String theme = prefs.getString('theme') ?? 'light';
   ThemeData initialTheme = theme == 'dark' ? darkTheme : lightTheme;
+
+  // Check for step reset on app startup
+  await checkAndResetSteps();
 
   scheduleMidnightTask(); // Ensure this is called to schedule the task.
 

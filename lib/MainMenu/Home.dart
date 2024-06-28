@@ -172,6 +172,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
   Future<void> _updateDatabaseWithSteps() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
     String? uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
       final userDoc = FirebaseFirestore.instance.collection('users').doc(uid);
@@ -179,9 +180,37 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       if (snapshot.exists) {
         final now = DateTime.now();
         final currentSteps = _steps;
+        int storedSteps = prefs.getInt('steps') ?? 0;
+
+        if (_lastResetDate.isBefore(DateTime(now.year, now.month, now.day))) {
+          int stepsDivider = prefs.getInt('stepsDivider') ?? 1; // Default to 1 if not set
+          int coinsEarned = (storedSteps / stepsDivider).toInt();
+          List<dynamic> dailySteps = snapshot['DailySteps'] ?? [];
+          dailySteps.add({
+            'date': _lastResetDate.toIso8601String(),
+            'steps': storedSteps,
+            'coins': coinsEarned,
+          });
+          await userDoc.update({
+            'DailySteps': dailySteps,
+            'CurrentDaySteps': 0,
+            'LastResetDate': now,
+            'Coins': FieldValue.increment(coinsEarned),
+          });
+          prefs.setInt('coinValue', (prefs.getInt('coinValue') ?? 0) + coinsEarned);
+          prefs.setInt('steps', 0);
+          prefs.setString('lastResetDate', now.toIso8601String());
+          prefs.setInt('initialSteps', 0);
+          setState(() {
+            _steps = 0;
+          });
+        } else {
+          await userDoc.update({
+            'CurrentDaySteps': currentSteps,
+          });
+        }
 
         List<dynamic> dailySteps = snapshot['DailySteps'] ?? [];
-
         bool todayEntryExists = false;
         for (var entry in dailySteps) {
           DateTime entryDate;

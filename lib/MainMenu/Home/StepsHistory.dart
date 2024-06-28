@@ -251,8 +251,8 @@ class _StepsHistoryState extends State<StepsHistory> {
                     toY: data['steps'].toDouble(),
                     gradient: LinearGradient(
                       colors: isCurrentDay
-                          ? [Colors.orange, Colors.yellow]
-                          : [Colors.lightBlueAccent, Colors.purple],
+                          ? [Color(0xFFFFF857), Color(0xFF7E5728)]
+                          : [Color(0xFF4D72F5), Color(0xFF1E3073)],
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                     ),
